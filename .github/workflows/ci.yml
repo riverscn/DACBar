@@ -107,7 +107,7 @@ jobs:
         run: test "$(uname -m)" = x86_64
 
       - name: Download the exact Universal 2 DMG
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: DACBar-universal-${{ github.sha }}
           path: dist
