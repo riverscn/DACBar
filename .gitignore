@@ -1,0 +1,28 @@
+# SwiftPM
+.build/
+.swiftpm/
+.vscode/
+xcuserdata/
+*.xcuserstate
+
+# 构建产物
+dist/
+updates/
+*.o
+
+# 签名材料：描述文件绑定到具体开发者账号和设备，不应入库
+embedded.provisionprofile
+*.keystore
+*.p12
+
+# 本地发布配置（正式文件应存放在仓库外；这里仅作为纵深防护）
+.secrets
+.variables
+release.secrets
+release.variables
+.release-secrets
+.release-variables
+dacbar-sparkle-private-key
+
+# macOS
+.DS_Store

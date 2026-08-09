@@ -1,0 +1,7 @@
+# Copy this file outside the repository, normally to:
+#   ~/.config/dacbar/release.variables
+#
+# These values are not secrets. Use literal values after '='; shell syntax is not evaluated.
+DEVELOPER_ID_APPLICATION=Developer ID Application: Name (TEAMID)
+NOTARY_TEAM_ID=TEAMID
+SPARKLE_PUBLIC_ED_KEY=
