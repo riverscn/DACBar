@@ -112,7 +112,9 @@ jobs:
           name: DACBar-universal-${{ github.sha }}
           path: dist
 
-      - name: Validate and launch the Intel slice
-        run: |
-          ./scripts/validate-dmg.sh dist/DACBar-ci.dmg
-          ./scripts/smoke-launch-dmg.sh dist/DACBar-ci.dmg
+      - name: Launch the Intel slice
+        # The upstream job already performs the complete bundle, signature,
+        # architecture, and DMG validation before uploading this exact artifact.
+        # Keep this runner focused on the one property only Intel can prove:
+        # that the x86_64 slice launches successfully.
+        run: ./scripts/smoke-launch-dmg.sh dist/DACBar-ci.dmg
