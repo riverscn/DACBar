@@ -1,0 +1,12 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "error.invalid-setting" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The value %1$lld is outside the supported range for %2$@." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数值 %1$lld 超出 %2$@ 的支持范围。" } } } },
+    "error.read-only-setting" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ is read-only." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ 只读。" } } } },
+    "error.unsupported-model" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No control driver is available for model %@." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "型号 %@ 没有可用的控制驱动。" } } } },
+    "error.unsupported-setting" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "This device does not support %@." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此设备不支持 %@。" } } } },
+    "settings.group.audio" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Audio" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音频" } } } },
+    "settings.group.display" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Display" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "屏幕" } } } }
+  },
+  "version" : "1.0"
+}
