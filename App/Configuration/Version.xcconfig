@@ -1,0 +1,7 @@
+// Single source of truth for DACBar's user-visible release version.
+// Apple requires CFBundleShortVersionString to use three numeric components.
+MARKETING_VERSION = 0.3.0
+
+// Local Xcode builds use this fallback. Distribution builds override it with
+// the monotonically increasing GitHub Actions run number.
+CURRENT_PROJECT_VERSION = 1

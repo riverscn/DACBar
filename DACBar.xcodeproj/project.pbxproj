@@ -1,0 +1,462 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		200000000000000000000001 /* DACBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000001 /* DACBarApp.swift */; };
+		200000000000000000000002 /* AttachedDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000002 /* AttachedDevice.swift */; };
+		200000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000003 /* ContentView.swift */; };
+		200000000000000000000004 /* DeviceControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000004 /* DeviceControlsView.swift */; };
+		200000000000000000000005 /* DeviceGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000005 /* DeviceGlyph.swift */; };
+		200000000000000000000006 /* DeviceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000006 /* DeviceModel.swift */; };
+		200000000000000000000007 /* DeviceWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000007 /* DeviceWatcher.swift */; };
+		200000000000000000000008 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000008 /* Localization.swift */; };
+		200000000000000000000009 /* PanelStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000009 /* PanelStyle.swift */; };
+		20000000000000000000000A /* SettingExplainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000A /* SettingExplainer.swift */; };
+		20000000000000000000000B /* SnapshotConvenience.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000B /* SnapshotConvenience.swift */; };
+		20000000000000000000000C /* SupportedDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000C /* SupportedDevices.swift */; };
+		20000000000000000000000D /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000D /* UpdateController.swift */; };
+		20000000000000000000000E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000E /* Localizable.xcstrings */; };
+		20000000000000000000000F /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000001 /* AppIcon.icon */; };
+		200000000000000000000010 /* Sparkle-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 120000000000000000000004 /* Sparkle-LICENSE.txt */; };
+		200000000000000000000011 /* DACDeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000001 /* DACDeviceKit */; };
+		200000000000000000000012 /* ShanlingUA1II in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000002 /* ShanlingUA1II */; };
+		200000000000000000000013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000003 /* Sparkle */; };
+		200000000000000000000014 /* DeviceModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000001 /* DeviceModelTests.swift */; };
+		200000000000000000000015 /* HardwareDeviceModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000002 /* HardwareDeviceModelTests.swift */; };
+		200000000000000000000016 /* UpdateControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000003 /* UpdateControllerTests.swift */; };
+		200000000000000000000017 /* DACDeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000004 /* DACDeviceKit */; };
+		200000000000000000000018 /* ShanlingUA1II in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000005 /* ShanlingUA1II */; };
+		200000000000000000000019 /* AppIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000F /* AppIdentity.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		800000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 500000000000000000000002 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 500000000000000000000001;
+			remoteInfo = DACBar;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		110000000000000000000001 /* DACBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DACBarApp.swift; sourceTree = "<group>"; };
+		110000000000000000000002 /* AttachedDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedDevice.swift; sourceTree = "<group>"; };
+		110000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		110000000000000000000004 /* DeviceControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlsView.swift; sourceTree = "<group>"; };
+		110000000000000000000005 /* DeviceGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceGlyph.swift; sourceTree = "<group>"; };
+		110000000000000000000006 /* DeviceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModel.swift; sourceTree = "<group>"; };
+		110000000000000000000007 /* DeviceWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceWatcher.swift; sourceTree = "<group>"; };
+		110000000000000000000008 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		110000000000000000000009 /* PanelStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PanelStyle.swift; sourceTree = "<group>"; };
+		11000000000000000000000A /* SettingExplainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingExplainer.swift; sourceTree = "<group>"; };
+		11000000000000000000000B /* SnapshotConvenience.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotConvenience.swift; sourceTree = "<group>"; };
+		11000000000000000000000C /* SupportedDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportedDevices.swift; sourceTree = "<group>"; };
+		11000000000000000000000D /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
+		11000000000000000000000E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		11000000000000000000000F /* AppIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIdentity.swift; sourceTree = "<group>"; };
+		120000000000000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer; path = AppIcon.icon; sourceTree = "<group>"; };
+		120000000000000000000002 /* DACBar.Local.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DACBar.Local.entitlements; sourceTree = "<group>"; };
+		120000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		120000000000000000000004 /* Sparkle-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Sparkle-LICENSE.txt"; sourceTree = "<group>"; };
+		120000000000000000000005 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		120000000000000000000006 /* Identity.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Identity.xcconfig; sourceTree = "<group>"; };
+		130000000000000000000001 /* DeviceModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModelTests.swift; sourceTree = "<group>"; };
+		130000000000000000000002 /* HardwareDeviceModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareDeviceModelTests.swift; sourceTree = "<group>"; };
+		130000000000000000000003 /* UpdateControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateControllerTests.swift; sourceTree = "<group>"; };
+		140000000000000000000001 /* DACBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DACBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		140000000000000000000002 /* DACBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DACBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		400000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000011 /* DACDeviceKit in Frameworks */,
+				200000000000000000000012 /* ShanlingUA1II in Frameworks */,
+				200000000000000000000013 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		400000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000017 /* DACDeviceKit in Frameworks */,
+				200000000000000000000018 /* ShanlingUA1II in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		300000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				300000000000000000000002 /* App */,
+				300000000000000000000004 /* DACBarTests */,
+				300000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		300000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				110000000000000000000001 /* DACBarApp.swift */,
+				11000000000000000000000F /* AppIdentity.swift */,
+				110000000000000000000002 /* AttachedDevice.swift */,
+				110000000000000000000003 /* ContentView.swift */,
+				110000000000000000000004 /* DeviceControlsView.swift */,
+				110000000000000000000005 /* DeviceGlyph.swift */,
+				110000000000000000000006 /* DeviceModel.swift */,
+				110000000000000000000007 /* DeviceWatcher.swift */,
+				110000000000000000000008 /* Localization.swift */,
+				110000000000000000000009 /* PanelStyle.swift */,
+				11000000000000000000000A /* SettingExplainer.swift */,
+				11000000000000000000000B /* SnapshotConvenience.swift */,
+				11000000000000000000000C /* SupportedDevices.swift */,
+				11000000000000000000000D /* UpdateController.swift */,
+				300000000000000000000006 /* Resources */,
+				300000000000000000000003 /* Configuration */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		300000000000000000000003 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				120000000000000000000002 /* DACBar.Local.entitlements */,
+				120000000000000000000003 /* Info.plist */,
+				120000000000000000000006 /* Identity.xcconfig */,
+				120000000000000000000005 /* Version.xcconfig */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+		300000000000000000000004 /* DACBarTests */ = {
+			isa = PBXGroup;
+			children = (
+				130000000000000000000001 /* DeviceModelTests.swift */,
+				130000000000000000000002 /* HardwareDeviceModelTests.swift */,
+				130000000000000000000003 /* UpdateControllerTests.swift */,
+			);
+			path = DACBarTests;
+			sourceTree = "<group>";
+		};
+		300000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				140000000000000000000001 /* DACBar.app */,
+				140000000000000000000002 /* DACBarTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		300000000000000000000006 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				11000000000000000000000E /* Localizable.xcstrings */,
+				120000000000000000000001 /* AppIcon.icon */,
+				120000000000000000000004 /* Sparkle-LICENSE.txt */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		500000000000000000000001 /* DACBar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 610000000000000000000002 /* Build configuration list for PBXNativeTarget "DACBar" */;
+			buildPhases = (
+				400000000000000000000001 /* Sources */,
+				400000000000000000000002 /* Frameworks */,
+				400000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DACBar;
+			packageProductDependencies = (
+				710000000000000000000001 /* DACDeviceKit */,
+				710000000000000000000002 /* ShanlingUA1II */,
+				710000000000000000000003 /* Sparkle */,
+			);
+			productName = DACBar;
+			productReference = 140000000000000000000001 /* DACBar.app */;
+			productType = "com.apple.product-type.application";
+		};
+		500000000000000000000003 /* DACBarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 610000000000000000000003 /* Build configuration list for PBXNativeTarget "DACBarTests" */;
+			buildPhases = (
+				400000000000000000000004 /* Sources */,
+				400000000000000000000005 /* Frameworks */,
+				400000000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				800000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = DACBarTests;
+			packageProductDependencies = (
+				710000000000000000000004 /* DACDeviceKit */,
+				710000000000000000000005 /* ShanlingUA1II */,
+			);
+			productName = DACBarTests;
+			productReference = 140000000000000000000002 /* DACBarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		500000000000000000000002 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					500000000000000000000001 = { CreatedOnToolsVersion = 27.0; };
+					500000000000000000000003 = { CreatedOnToolsVersion = 27.0; TestTargetID = 500000000000000000000001; };
+				};
+			};
+			buildConfigurationList = 610000000000000000000001 /* Build configuration list for PBXProject "DACBar" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (en, Base, "zh-Hans");
+			mainGroup = 300000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */,
+				700000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 300000000000000000000005 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				500000000000000000000001 /* DACBar */,
+				500000000000000000000003 /* DACBarTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		400000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				20000000000000000000000E /* Localizable.xcstrings in Resources */,
+				20000000000000000000000F /* AppIcon.icon in Resources */,
+				200000000000000000000010 /* Sparkle-LICENSE.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		400000000000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		400000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000001 /* DACBarApp.swift in Sources */,
+				200000000000000000000019 /* AppIdentity.swift in Sources */,
+				200000000000000000000002 /* AttachedDevice.swift in Sources */,
+				200000000000000000000003 /* ContentView.swift in Sources */,
+				200000000000000000000004 /* DeviceControlsView.swift in Sources */,
+				200000000000000000000005 /* DeviceGlyph.swift in Sources */,
+				200000000000000000000006 /* DeviceModel.swift in Sources */,
+				200000000000000000000007 /* DeviceWatcher.swift in Sources */,
+				200000000000000000000008 /* Localization.swift in Sources */,
+				200000000000000000000009 /* PanelStyle.swift in Sources */,
+				20000000000000000000000A /* SettingExplainer.swift in Sources */,
+				20000000000000000000000B /* SnapshotConvenience.swift in Sources */,
+				20000000000000000000000C /* SupportedDevices.swift in Sources */,
+				20000000000000000000000D /* UpdateController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		400000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200000000000000000000014 /* DeviceModelTests.swift in Sources */,
+				200000000000000000000015 /* HardwareDeviceModelTests.swift in Sources */,
+				200000000000000000000016 /* UpdateControllerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		800000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 500000000000000000000001 /* DACBar */;
+			targetProxy = 800000000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		600000000000000000000001 /* Debug */ = {isa = XCBuildConfiguration; buildSettings = { ARCHS = "$(ARCHS_STANDARD)"; CLANG_ENABLE_MODULES = YES; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_TESTABILITY = YES; MACOSX_DEPLOYMENT_TARGET = 14.0; ONLY_ACTIVE_ARCH = YES; SDKROOT = macosx; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)"; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; SWIFT_VERSION = 6.0; }; name = Debug; };
+		600000000000000000000002 /* Release */ = {isa = XCBuildConfiguration; buildSettings = { ARCHS = "$(ARCHS_STANDARD)"; CLANG_ENABLE_MODULES = YES; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; MACOSX_DEPLOYMENT_TARGET = 14.0; ONLY_ACTIVE_ARCH = NO; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Release; };
+		600000000000000000000007 /* Distribution */ = {isa = XCBuildConfiguration; buildSettings = { ARCHS = "$(ARCHS_STANDARD)"; CLANG_ENABLE_MODULES = YES; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; MACOSX_DEPLOYMENT_TARGET = 14.0; ONLY_ACTIVE_ARCH = NO; SDKROOT = macosx; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 6.0; }; name = Distribution; };
+		600000000000000000000003 /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = 120000000000000000000006 /* Identity.xcconfig */; buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_ENTITLEMENTS = App/Configuration/DACBar.Local.entitlements;
+			CODE_SIGN_IDENTITY = "-";
+			CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+			CODE_SIGN_STYLE = Manual;
+			COPY_PHASE_STRIP = NO;
+			DACBAR_SPARKLE_FEED_URL = "";
+			DACBAR_SPARKLE_PUBLIC_KEY = "";
+			DEAD_CODE_STRIPPING = YES;
+			ENABLE_APP_SANDBOX = NO;
+			ENABLE_HARDENED_RUNTIME = YES;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = App/Configuration/Info.plist;
+			LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
+			PRODUCT_BUNDLE_IDENTIFIER = "$(DACBAR_BUNDLE_IDENTIFIER)";
+			PRODUCT_MODULE_NAME = DACBar;
+			PRODUCT_NAME = DACBar;
+			SUPPORTED_PLATFORMS = macosx;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+		}; name = Debug; };
+		600000000000000000000004 /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = 120000000000000000000006 /* Identity.xcconfig */; buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_ENTITLEMENTS = App/Configuration/DACBar.Local.entitlements;
+			CODE_SIGN_IDENTITY = "-";
+			CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+			CODE_SIGN_STYLE = Manual;
+			COPY_PHASE_STRIP = NO;
+			DACBAR_SPARKLE_FEED_URL = "";
+			DACBAR_SPARKLE_PUBLIC_KEY = "";
+			DEAD_CODE_STRIPPING = YES;
+			ENABLE_APP_SANDBOX = NO;
+			ENABLE_HARDENED_RUNTIME = YES;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = App/Configuration/Info.plist;
+			LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
+			PRODUCT_BUNDLE_IDENTIFIER = "$(DACBAR_BUNDLE_IDENTIFIER)";
+			PRODUCT_MODULE_NAME = DACBar;
+			PRODUCT_NAME = DACBar;
+			SUPPORTED_PLATFORMS = macosx;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+		}; name = Release; };
+		600000000000000000000008 /* Distribution */ = {isa = XCBuildConfiguration; baseConfigurationReference = 120000000000000000000006 /* Identity.xcconfig */; buildSettings = {
+			ALWAYS_SEARCH_USER_PATHS = NO;
+			ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			CODE_SIGN_IDENTITY = "-";
+			CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+			CODE_SIGN_STYLE = Manual;
+			COPY_PHASE_STRIP = NO;
+			DACBAR_SPARKLE_FEED_URL = "";
+			DACBAR_SPARKLE_PUBLIC_KEY = "";
+			DEAD_CODE_STRIPPING = YES;
+			ENABLE_APP_SANDBOX = NO;
+			ENABLE_HARDENED_RUNTIME = YES;
+			GENERATE_INFOPLIST_FILE = NO;
+			INFOPLIST_FILE = App/Configuration/Info.plist;
+			LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks");
+			PRODUCT_BUNDLE_IDENTIFIER = "$(DACBAR_BUNDLE_IDENTIFIER)";
+			PRODUCT_MODULE_NAME = DACBar;
+			PRODUCT_NAME = DACBar;
+			SUPPORTED_PLATFORMS = macosx;
+			SWIFT_EMIT_LOC_STRINGS = YES;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+		}; name = Distribution; };
+		600000000000000000000005 /* Debug */ = {isa = XCBuildConfiguration; baseConfigurationReference = 120000000000000000000006 /* Identity.xcconfig */; buildSettings = {
+			BUNDLE_LOADER = "$(TEST_HOST)";
+			CODE_SIGN_IDENTITY = "-";
+			CODE_SIGN_STYLE = Manual;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 14.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(DACBAR_BUNDLE_IDENTIFIER).Tests";
+			PRODUCT_MODULE_NAME = DACBarTests;
+			PRODUCT_NAME = DACBarTests;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+			SWIFT_VERSION = 6.0;
+			TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DACBar.app/Contents/MacOS/DACBar";
+		}; name = Debug; };
+		600000000000000000000006 /* Release */ = {isa = XCBuildConfiguration; baseConfigurationReference = 120000000000000000000006 /* Identity.xcconfig */; buildSettings = {
+			BUNDLE_LOADER = "$(TEST_HOST)";
+			CODE_SIGN_IDENTITY = "-";
+			CODE_SIGN_STYLE = Manual;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 14.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(DACBAR_BUNDLE_IDENTIFIER).Tests";
+			PRODUCT_MODULE_NAME = DACBarTests;
+			PRODUCT_NAME = DACBarTests;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+			SWIFT_VERSION = 6.0;
+			TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DACBar.app/Contents/MacOS/DACBar";
+		}; name = Release; };
+		600000000000000000000009 /* Distribution */ = {isa = XCBuildConfiguration; baseConfigurationReference = 120000000000000000000006 /* Identity.xcconfig */; buildSettings = {
+			BUNDLE_LOADER = "$(TEST_HOST)";
+			CODE_SIGN_IDENTITY = "-";
+			CODE_SIGN_STYLE = Manual;
+			GENERATE_INFOPLIST_FILE = YES;
+			MACOSX_DEPLOYMENT_TARGET = 14.0;
+			PRODUCT_BUNDLE_IDENTIFIER = "$(DACBAR_BUNDLE_IDENTIFIER).Tests";
+			PRODUCT_MODULE_NAME = DACBarTests;
+			PRODUCT_NAME = DACBarTests;
+			SWIFT_STRICT_CONCURRENCY = complete;
+			SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+			SWIFT_VERSION = 6.0;
+			TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DACBar.app/Contents/MacOS/DACBar";
+		}; name = Distribution; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		610000000000000000000001 /* Build configuration list for PBXProject "DACBar" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000001 /* Debug */, 600000000000000000000002 /* Release */, 600000000000000000000007 /* Distribution */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		610000000000000000000002 /* Build configuration list for PBXNativeTarget "DACBar" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000003 /* Debug */, 600000000000000000000004 /* Release */, 600000000000000000000008 /* Distribution */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		610000000000000000000003 /* Build configuration list for PBXNativeTarget "DACBarTests" */ = {isa = XCConfigurationList; buildConfigurations = (600000000000000000000005 /* Debug */, 600000000000000000000006 /* Release */, 600000000000000000000009 /* Distribution */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/DACDevices; };
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		700000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = { kind = exactVersion; version = 2.9.5; };
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		710000000000000000000001 /* DACDeviceKit */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = DACDeviceKit; };
+		710000000000000000000002 /* ShanlingUA1II */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = ShanlingUA1II; };
+		710000000000000000000003 /* Sparkle */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */; productName = Sparkle; };
+		710000000000000000000004 /* DACDeviceKit */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = DACDeviceKit; };
+		710000000000000000000005 /* ShanlingUA1II */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = ShanlingUA1II; };
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 500000000000000000000002 /* Project object */;
+}

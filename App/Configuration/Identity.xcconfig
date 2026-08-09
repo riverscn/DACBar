@@ -1,0 +1,8 @@
+// Single source of truth for DACBar's stable application identity.
+// Scripts should read the resolved Xcode build setting instead of parsing this
+// file or duplicating the reverse-DNS identifier.
+DACBAR_BUNDLE_IDENTIFIER = me.lishun.DACBar
+
+// Keep release version settings in their focused file while exposing one base
+// configuration to every target that needs the shared application identity.
+#include "Version.xcconfig"
