@@ -1,0 +1,65 @@
+name: Hardware integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      location_id:
+        description: Optional UA1 II location ID, for example 0x01100000
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dacbar-hardware
+  cancel-in-progress: false
+
+jobs:
+  ua1ii-hardware:
+    name: UA1 II hardware regression
+    if: github.actor == github.repository_owner && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64, DACBar-Hardware]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the dedicated Xcode 27 hardware runner
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -version | grep -q '^Xcode 27\.'
+          swift --version | grep -q 'Swift version 6\.4'
+          test "$(uname -m)" = arm64
+
+      - name: Run driver hardware tests
+        env:
+          HARDWARE_LOCATION_ID: ${{ inputs.location_id }}
+        run: |
+          if [ -n "$HARDWARE_LOCATION_ID" ]; then
+            export SHANLING_HARDWARE_LOCATION_ID="$HARDWARE_LOCATION_ID"
+          fi
+          SHANLING_HARDWARE_TESTS=1 swift test \
+            --package-path Packages/DACDevices \
+            --scratch-path .build/hardware-package \
+            --no-parallel \
+            --filter HardwareIntegrationTests
+
+      - name: Run app-model hardware tests
+        env:
+          HARDWARE_LOCATION_ID: ${{ inputs.location_id }}
+        run: |
+          if [ -n "$HARDWARE_LOCATION_ID" ]; then
+            export DACBAR_HARDWARE_LOCATION_ID="$HARDWARE_LOCATION_ID"
+          fi
+          DACBAR_HARDWARE_TESTS=1 xcodebuild -quiet \
+            -project DACBar.xcodeproj \
+            -scheme DACBar \
+            -disableAutomaticPackageResolution \
+            -configuration Debug \
+            -derivedDataPath .build/hardware-app \
+            -destination "platform=macOS,arch=arm64" \
+            -only-testing:DACBarTests/HardwareDeviceModelTests \
+            test

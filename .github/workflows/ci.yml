@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-tests:
+    name: Xcode 27 source tests
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted Xcode 27 ARM64 image
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -version | grep -q '^Xcode 27\.'
+          swift --version | grep -q 'Swift version 6\.4'
+          test "$(uname -m)" = arm64
+
+      - name: Test with complete concurrency checking
+        run: >-
+          swift test --package-path Packages/DACDevices
+          --scratch-path .build/package
+          -Xswiftc -strict-concurrency=complete
+          -Xswiftc -warnings-as-errors
+
+      - name: Build package libraries with complete concurrency checking
+        run: >-
+          swift build --package-path Packages/DACDevices
+          --scratch-path .build/package
+          -Xswiftc -strict-concurrency=complete
+          -Xswiftc -warnings-as-errors
+
+      - name: Test the Xcode app
+        run: >-
+          xcodebuild -quiet
+          -project DACBar.xcodeproj
+          -scheme DACBar
+          -disableAutomaticPackageResolution
+          -configuration Debug
+          -derivedDataPath .build/ci-tests
+          -destination "platform=macOS,arch=arm64"
+          test
+
+  universal-app:
+    name: Universal 2 app and DMG
+    needs: source-tests
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted Xcode 27 ARM64 image
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -version | grep -q '^Xcode 27\.'
+          swift --version | grep -q 'Swift version 6\.4'
+          test "$(uname -m)" = arm64
+
+      - name: Build and validate Universal 2 app
+        env:
+          DACBAR_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          ./build.sh release
+          ./scripts/validate-app.sh dist/DACBar.app
+          ./scripts/smoke-launch-app.sh dist/DACBar.app
+          ./scripts/create-dmg.sh dist/DACBar.app dist/DACBar-ci.dmg "DACBar CI"
+          codesign --force --sign - --timestamp=none dist/DACBar-ci.dmg
+          ./scripts/validate-dmg.sh dist/DACBar-ci.dmg
+
+      - name: Upload validated DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: DACBar-universal-${{ github.sha }}
+          path: dist/DACBar-ci.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+  intel-smoke:
+    name: Intel launch smoke
+    needs: universal-app
+    runs-on: macos-26-intel
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted Intel image
+        run: test "$(uname -m)" = x86_64
+
+      - name: Download the exact Universal 2 DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: DACBar-universal-${{ github.sha }}
+          path: dist
+
+      - name: Validate and launch the Intel slice
+        run: |
+          ./scripts/validate-dmg.sh dist/DACBar-ci.dmg
+          ./scripts/smoke-launch-dmg.sh dist/DACBar-ci.dmg

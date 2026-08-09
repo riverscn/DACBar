@@ -1,0 +1,252 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  source-tests:
+    name: Xcode 27 release tests
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted Xcode 27 ARM64 image
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -version | grep -q '^Xcode 27\.'
+          swift --version | grep -q 'Swift version 6\.4'
+          test "$(uname -m)" = arm64
+
+      - name: Test with complete concurrency checking
+        run: >-
+          swift test --package-path Packages/DACDevices
+          --scratch-path .build/package
+          -Xswiftc -strict-concurrency=complete
+          -Xswiftc -warnings-as-errors
+
+      - name: Test the Xcode app
+        run: >-
+          xcodebuild -quiet
+          -project DACBar.xcodeproj
+          -scheme DACBar
+          -disableAutomaticPackageResolution
+          -configuration Debug
+          -derivedDataPath .build/release-tests
+          -destination "platform=macOS,arch=arm64"
+          test
+
+      - name: Build and launch-smoke the local Release app
+        run: |
+          xcodebuild -quiet \
+            -project DACBar.xcodeproj \
+            -scheme DACBar \
+            -disableAutomaticPackageResolution \
+            -configuration Release \
+            -derivedDataPath .build/release-smoke \
+            -destination "platform=macOS,arch=arm64" \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            build
+          ./scripts/smoke-launch-app.sh \
+            .build/release-smoke/Build/Products/Release/DACBar.app
+
+  notarized-artifacts:
+    name: Sign and notarize release candidate
+    needs: source-tests
+    runs-on: xcode-27
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted Xcode 27 ARM64 image
+        run: |
+          xcodebuild -version
+          swift --version
+          xcodebuild -version | grep -q '^Xcode 27\.'
+          swift --version | grep -q 'Swift version 6\.4'
+          test "$(uname -m)" = arm64
+
+      - name: Verify tag matches the effective Xcode marketing version
+        run: |
+          VERSION=$(./scripts/read-version.sh Distribution)
+          test "${GITHUB_REF_NAME}" = "v$VERSION"
+
+      - name: Require release credentials and metadata
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          DEVELOPER_ID_APPLICATION: ${{ vars.DEVELOPER_ID_APPLICATION }}
+          NOTARY_TEAM_ID: ${{ vars.NOTARY_TEAM_ID }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          missing=0
+          for name in \
+            BUILD_CERTIFICATE_BASE64 \
+            P12_PASSWORD \
+            NOTARY_APPLE_ID \
+            NOTARY_PASSWORD \
+            SPARKLE_PRIVATE_KEY \
+            DEVELOPER_ID_APPLICATION \
+            NOTARY_TEAM_ID \
+            SPARKLE_PUBLIC_ED_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing GitHub Actions setting: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Import Developer ID certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/dacbar-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          rm -f "$CERTIFICATE_PATH" "$KEYCHAIN_PATH"
+          printf '%s' "$BUILD_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Store notarization credentials
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ vars.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: >-
+          xcrun notarytool store-credentials dacbar-ci
+          --apple-id "$NOTARY_APPLE_ID"
+          --team-id "$NOTARY_TEAM_ID"
+          --password "$NOTARY_PASSWORD"
+          --keychain "$RUNNER_TEMP/dacbar-signing.keychain-db"
+
+      - name: Build, sign, notarize and validate
+        env:
+          DACBAR_SIGN_ID: ${{ vars.DEVELOPER_ID_APPLICATION }}
+          DACBAR_SIGN_KEYCHAIN: ${{ runner.temp }}/dacbar-signing.keychain-db
+          DACBAR_NOTARY_PROFILE: dacbar-ci
+          DACBAR_NOTARY_KEYCHAIN: ${{ runner.temp }}/dacbar-signing.keychain-db
+          DACBAR_BUILD_NUMBER: ${{ github.run_number }}
+          DACBAR_SPARKLE_PUBLIC_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+          DACBAR_SPARKLE_FEED_URL: https://github.com/${{ github.repository }}/releases/latest/download/appcast.xml
+        run: ./build.sh release
+
+      - name: Generate signed Sparkle appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          VERSION=$(plutil -extract CFBundleShortVersionString raw \
+            dist/DACBar.app/Contents/Info.plist)
+          DERIVED_PUBLIC_KEY=$(printf '%s' "$SPARKLE_PRIVATE_KEY" | swift tools/sparkle-public-key.swift)
+          test "$DERIVED_PUBLIC_KEY" = "$SPARKLE_PUBLIC_ED_KEY"
+          mkdir -p updates
+          cp "dist/DACBar-$VERSION.dmg" updates/
+          cp CHANGELOG.md "updates/DACBar-$VERSION.md"
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | \
+            .build/xcode/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast \
+              --ed-key-file - \
+              --download-url-prefix "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/" \
+              --link "https://github.com/${GITHUB_REPOSITORY}" \
+              --embed-release-notes \
+              --maximum-deltas 0 \
+              updates
+          test -s updates/appcast.xml
+          grep -q 'sparkle:edSignature=' updates/appcast.xml
+          grep -q 'sparkle-signatures:' updates/appcast.xml
+          printf '%s' "$SPARKLE_PRIVATE_KEY" | \
+            .build/xcode/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update \
+              --verify --ed-key-file - updates/appcast.xml
+          ! grep -q 'sparkle:hardwareRequirements' updates/appcast.xml
+          mkdir -p release-candidate
+          cp dist/DACBar-*.dmg dist/DACBar-*.dmg.sha256 \
+            updates/appcast.xml release-candidate/
+
+      - name: Upload the notarized release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: DACBar-release-${{ github.sha }}
+          path: release-candidate/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Remove temporary signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/dacbar-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/developer-id.p12" "$RUNNER_TEMP/dacbar-signing.keychain-db"
+
+  intel-smoke:
+    name: Validate release candidate on Intel
+    needs: notarized-artifacts
+    runs-on: macos-26-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted Intel image
+        run: test "$(uname -m)" = x86_64
+
+      - name: Download the notarized release candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: DACBar-release-${{ github.sha }}
+          path: release-assets
+
+      - name: Verify Gatekeeper and launch the Intel slice
+        run: |
+          DMGS=(release-assets/DACBar-*.dmg)
+          test "${#DMGS[@]}" -eq 1
+          DACBAR_REQUIRE_DISTRIBUTION=1 ./scripts/validate-dmg.sh "${DMGS[0]}"
+          ./scripts/smoke-launch-dmg.sh "${DMGS[0]}"
+
+  publish-release:
+    name: Publish GitHub release
+    needs: [notarized-artifacts, intel-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the validated release candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: DACBar-release-${{ github.sha }}
+          path: release-assets
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DMGS=(release-assets/DACBar-*.dmg)
+          CHECKSUMS=(release-assets/DACBar-*.dmg.sha256)
+          test "${#DMGS[@]}" -eq 1
+          test "${#CHECKSUMS[@]}" -eq 1
+          test -f release-assets/appcast.xml
+          gh release create "$GITHUB_REF_NAME" \
+            "${DMGS[0]}" \
+            "${CHECKSUMS[0]}" \
+            release-assets/appcast.xml \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "DACBar ${GITHUB_REF_NAME#v}" \
+            --generate-notes
