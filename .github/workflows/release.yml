@@ -207,7 +207,7 @@ jobs:
         run: test "$(uname -m)" = x86_64
 
       - name: Download the notarized release candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: DACBar-release-${{ github.sha }}
           path: release-assets
@@ -228,7 +228,7 @@ jobs:
       contents: write
     steps:
       - name: Download the validated release candidate
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: DACBar-release-${{ github.sha }}
           path: release-assets
