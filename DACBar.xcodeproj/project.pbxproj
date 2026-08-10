@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D9A000000000000000000001 /* DeviceWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9A000000000000000000002 /* DeviceWatcherTests.swift */; };
 		200000000000000000000001 /* DACBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000001 /* DACBarApp.swift */; };
 		200000000000000000000002 /* AttachedDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000002 /* AttachedDevice.swift */; };
 		200000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000003 /* ContentView.swift */; };
@@ -38,7 +39,6 @@
 		20000000000000000000001D /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000013 /* LaunchAtLoginController.swift */; };
 		20000000000000000000001E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000014 /* SettingsView.swift */; };
 		20000000000000000000001F /* HotKeyShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000004 /* HotKeyShortcutTests.swift */; };
-		200000000000000000000020 /* DeviceWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000005 /* DeviceWatcherTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +52,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D9A000000000000000000002 /* DeviceWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceWatcherTests.swift; sourceTree = "<group>"; };
 		110000000000000000000001 /* DACBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DACBarApp.swift; sourceTree = "<group>"; };
 		110000000000000000000002 /* AttachedDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedDevice.swift; sourceTree = "<group>"; };
 		110000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -82,7 +83,6 @@
 		130000000000000000000002 /* HardwareDeviceModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareDeviceModelTests.swift; sourceTree = "<group>"; };
 		130000000000000000000003 /* UpdateControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateControllerTests.swift; sourceTree = "<group>"; };
 		130000000000000000000004 /* HotKeyShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyShortcutTests.swift; sourceTree = "<group>"; };
-		130000000000000000000005 /* DeviceWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceWatcherTests.swift; sourceTree = "<group>"; };
 		140000000000000000000001 /* DACBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DACBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		140000000000000000000002 /* DACBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DACBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -161,11 +161,11 @@
 		300000000000000000000004 /* DACBarTests */ = {
 			isa = PBXGroup;
 			children = (
+				D9A000000000000000000002 /* DeviceWatcherTests.swift */,
 				130000000000000000000001 /* DeviceModelTests.swift */,
 				130000000000000000000002 /* HardwareDeviceModelTests.swift */,
 				130000000000000000000003 /* UpdateControllerTests.swift */,
 				130000000000000000000004 /* HotKeyShortcutTests.swift */,
-				130000000000000000000005 /* DeviceWatcherTests.swift */,
 			);
 			path = DACBarTests;
 			sourceTree = "<group>";
@@ -323,11 +323,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D9A000000000000000000001 /* DeviceWatcherTests.swift in Sources */,
 				200000000000000000000014 /* DeviceModelTests.swift in Sources */,
 				200000000000000000000015 /* HardwareDeviceModelTests.swift in Sources */,
 				200000000000000000000016 /* UpdateControllerTests.swift in Sources */,
 				20000000000000000000001F /* HotKeyShortcutTests.swift in Sources */,
-				200000000000000000000020 /* DeviceWatcherTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
