@@ -2,10 +2,14 @@
 
 set -euo pipefail
 
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
-readonly REPOSITORY_ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
+SCRIPT_NAME="$(basename "$0")"
+readonly SCRIPT_NAME
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+readonly SCRIPT_DIR
+REPOSITORY_ROOT="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel)"
+readonly REPOSITORY_ROOT
 readonly DEFAULT_CONFIG_DIRECTORY="${XDG_CONFIG_HOME:-${HOME}/.config}/dacbar"
+readonly RELEASE_ENVIRONMENT="release-signing"
 
 secrets_file=""
 variables_file=""
@@ -18,6 +22,8 @@ usage() {
 Usage: $SCRIPT_NAME [options]
 
 Configure the GitHub Actions settings required by DACBar releases.
+The protected $RELEASE_ENVIRONMENT environment must already exist; this script
+does not create or change environments, reviewers, deployment policies, or rulesets.
 
 Options:
   --secrets-file PATH    Read secret values and secure-file paths from PATH.
@@ -152,7 +158,7 @@ validate_config_keys() {
         key="${line%%=*}"
         key="$(printf '%s' "$key" | awk '{$1=$1; print}')"
         case "$kind:$key" in
-            secrets:BUILD_CERTIFICATE_P12|secrets:P12_PASSWORD|secrets:NOTARY_APPLE_ID|secrets:NOTARY_PASSWORD|secrets:SPARKLE_PRIVATE_KEY_FILE) ;;
+            secrets:BUILD_CERTIFICATE_P12|secrets:P12_PASSWORD|secrets:NOTARY_APPLE_ID|secrets:NOTARY_PASSWORD|secrets:SPARKLE_PRIVATE_KEY_FILE|secrets:DSYM_ARCHIVE_PASSWORD) ;;
             variables:DEVELOPER_ID_APPLICATION|variables:NOTARY_TEAM_ID|variables:SPARKLE_PUBLIC_ED_KEY) ;;
             *) fail "unknown $kind key '$key' in $path" ;;
         esac
@@ -224,6 +230,8 @@ if [[ -n "$secrets_file" ]]; then
     notary_password="$CONFIG_VALUE"
     read_config_value "$secrets_file" SPARKLE_PRIVATE_KEY_FILE
     sparkle_private_key_path="$CONFIG_VALUE"
+    read_config_value "$secrets_file" DSYM_ARCHIVE_PASSWORD
+    dsym_archive_password="$CONFIG_VALUE"
 else
     ((validate_only == 0)) || fail "--validate-only requires --secrets-file (or the default file)"
     prompt_value "Absolute path to Developer ID .p12" no
@@ -236,6 +244,8 @@ else
     notary_password="$PROMPT_VALUE"
     prompt_value "Absolute path to the exported Sparkle private key" no
     sparkle_private_key_path="$PROMPT_VALUE"
+    prompt_value "Password for encrypted dSYM archives" yes
+    dsym_archive_password="$PROMPT_VALUE"
 fi
 
 if [[ -n "$variables_file" ]]; then
@@ -259,8 +269,10 @@ fi
 
 validate_sensitive_file "$certificate_path" "Developer ID .p12"
 validate_sensitive_file "$sparkle_private_key_path" "Sparkle private key"
+(( ${#dsym_archive_password} >= 32 )) || fail "DSYM_ARCHIVE_PASSWORD must contain at least 32 characters"
 [[ "$notary_team_id" =~ ^[A-Z0-9]{10}$ ]] || fail "NOTARY_TEAM_ID must contain exactly 10 uppercase letters or digits"
-[[ "$developer_id_application" == "Developer ID Application: "*" ("$notary_team_id")" ]] || \
+[[ "$developer_id_application" == "Developer ID Application: "* \
+    && "$developer_id_application" == *" ($notary_team_id)" ]] || \
     fail "DEVELOPER_ID_APPLICATION must end with the configured NOTARY_TEAM_ID"
 
 derived_sparkle_public_key="$(swift "$REPOSITORY_ROOT/tools/sparkle-public-key.swift" < "$sparkle_private_key_path")"
@@ -279,10 +291,12 @@ if [[ -z "$target_repository" ]]; then
 fi
 [[ "$target_repository" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] || fail "--repo must use OWNER/REPO format"
 target_repository="$(gh repo view "$target_repository" --json nameWithOwner --jq .nameWithOwner)"
+gh api "repos/$target_repository/environments/$RELEASE_ENVIRONMENT" >/dev/null || \
+    fail "GitHub environment '$RELEASE_ENVIRONMENT' does not exist; configure it manually first"
 
 printf 'Target GitHub repository: %s\n' "$target_repository"
 if ((assume_yes == 0)); then
-    printf 'Upload 5 Secrets and 3 Variables? [y/N] '
+    printf 'Upload 6 Secrets and 3 Variables? [y/N] '
     IFS= read -r confirmation
     case "$confirmation" in
         y|Y|yes|YES) ;;
@@ -290,25 +304,36 @@ if ((assume_yes == 0)); then
     esac
 fi
 
-printf 'Setting GitHub Actions Secrets...\n'
-/usr/bin/base64 < "$certificate_path" | gh secret set BUILD_CERTIFICATE_BASE64 --repo "$target_repository"
-printf '%s' "$p12_password" | gh secret set P12_PASSWORD --repo "$target_repository"
-printf '%s' "$notary_apple_id" | gh secret set NOTARY_APPLE_ID --repo "$target_repository"
-printf '%s' "$notary_password" | gh secret set NOTARY_PASSWORD --repo "$target_repository"
-gh secret set SPARKLE_PRIVATE_KEY --repo "$target_repository" < "$sparkle_private_key_path"
+printf 'Setting GitHub Actions Secrets in %s...\n' "$RELEASE_ENVIRONMENT"
+/usr/bin/base64 < "$certificate_path" | gh secret set BUILD_CERTIFICATE_BASE64 \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
+printf '%s' "$p12_password" | gh secret set P12_PASSWORD \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
+printf '%s' "$notary_apple_id" | gh secret set NOTARY_APPLE_ID \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
+printf '%s' "$notary_password" | gh secret set NOTARY_PASSWORD \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
+gh secret set SPARKLE_PRIVATE_KEY --repo "$target_repository" \
+    --env "$RELEASE_ENVIRONMENT" < "$sparkle_private_key_path"
+printf '%s' "$dsym_archive_password" | gh secret set DSYM_ARCHIVE_PASSWORD \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
 
-printf 'Setting GitHub Actions Variables...\n'
-printf '%s' "$developer_id_application" | gh variable set DEVELOPER_ID_APPLICATION --repo "$target_repository"
-printf '%s' "$notary_team_id" | gh variable set NOTARY_TEAM_ID --repo "$target_repository"
-printf '%s' "$sparkle_public_key" | gh variable set SPARKLE_PUBLIC_ED_KEY --repo "$target_repository"
+printf 'Setting GitHub Actions Variables in %s...\n' "$RELEASE_ENVIRONMENT"
+printf '%s' "$developer_id_application" | gh variable set DEVELOPER_ID_APPLICATION \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
+printf '%s' "$notary_team_id" | gh variable set NOTARY_TEAM_ID \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
+printf '%s' "$sparkle_public_key" | gh variable set SPARKLE_PUBLIC_ED_KEY \
+    --repo "$target_repository" --env "$RELEASE_ENVIRONMENT"
 
-secret_names="$(gh secret list --repo "$target_repository" --json name --jq '.[].name')"
-variable_names="$(gh variable list --repo "$target_repository" --json name --jq '.[].name')"
-for name in BUILD_CERTIFICATE_BASE64 P12_PASSWORD NOTARY_APPLE_ID NOTARY_PASSWORD SPARKLE_PRIVATE_KEY; do
+secret_names="$(gh secret list --repo "$target_repository" --env "$RELEASE_ENVIRONMENT" --json name --jq '.[].name')"
+variable_names="$(gh variable list --repo "$target_repository" --env "$RELEASE_ENVIRONMENT" --json name --jq '.[].name')"
+for name in BUILD_CERTIFICATE_BASE64 P12_PASSWORD NOTARY_APPLE_ID NOTARY_PASSWORD SPARKLE_PRIVATE_KEY DSYM_ARCHIVE_PASSWORD; do
     grep -Fqx "$name" <<< "$secret_names" || fail "GitHub did not report Secret $name after upload"
 done
 for name in DEVELOPER_ID_APPLICATION NOTARY_TEAM_ID SPARKLE_PUBLIC_ED_KEY; do
     grep -Fqx "$name" <<< "$variable_names" || fail "GitHub did not report Variable $name after upload"
 done
 
-printf 'Release settings are configured for %s. The script did not display secrets or create credential copies.\n' "$target_repository"
+printf 'Release settings are configured for %s environment %s. The script did not display secrets or create credential copies.\n' \
+    "$target_repository" "$RELEASE_ENVIRONMENT"

@@ -26,11 +26,14 @@
 - `DACBar.xcodeproj` 直接拥有唯一 App target 与 App test target；嵌套的
   `Packages/DACDevices/Package.swift` 只输出可测试、可复用的设备库。
 - Swift 6.4 源码测试、Universal 2 构建、Developer ID 签名和公证只使用标准
-  GitHub-hosted `xcode-27` ARM64 runner。Intel job 使用 `macos-26-intel` 下载同一个 DMG，
-  验证签名与 bundle 后实际启动 x86_64 切片；它不使用另一套编译器重新构建源码。
-- tag workflow 默认只有 `contents: read`，所有 checkout 都禁用凭据持久化。持有证书与
-  公证 secrets 的 `notarized-artifacts` job 没有写权限；只有在 Intel 门禁通过后，独立
-  Ubuntu `publish-release` job 才获得 `contents: write`，且它不读取任何发布 secret。
+  GitHub-hosted `xcode-27` ARM64 runner。最终签名、公证的同一个 DMG 会重新下载到
+  `xcode-27` ARM、`macos-26-intel` 和最低系统 `macos-14` runner；每个 job 先验证
+  SHA-256 和 Gatekeeper，再实际启动对应切片，不使用另一套编译器重新构建源码。
+- tag workflow 默认只有 `contents: read`，所有 checkout 都禁用凭据持久化。无 secret 的
+  `release-trust` job 先验证 tag、签名和 `origin/main` 包含关系。持有证书与公证 secrets 的
+  `notarized-artifacts` job 还必须通过受保护的 `release-signing` environment 审批且没有写权限；
+  只有全部运行时门禁通过后，独立 Ubuntu `publish-release` job 才获得 `contents: write`，且它
+  不 checkout 源码、不读取任何发布 secret。
 - 普通 PR 使用 `pull_request` 在一次性 GitHub-hosted VM 中验证合并结果，不运行持久机器、
   不获得发布 secrets。公开仓库使用 standard hosted runner 不计 Actions 分钟；单 job、
   并发和 artifact storage 仍受 GitHub 套餐限制，`xcode-27-xlarge` 等 larger runner 不在
@@ -49,9 +52,9 @@
 ## 首次发布准备
 
 以下配置只需在首次公开发布前完成一次；普通源码 push 和不带 `v*` tag 的 CI 不读取
-发布 secrets。先创建 GitHub 仓库、配置 `origin` 并让 `gh auth status` 成功，再到仓库的
-**Settings → Secrets and variables → Actions** 配置下表。Secret 的值无法再次查看，只能
-替换；长期凭据还必须在 GitHub 之外保留恢复副本。
+发布 secrets。先创建 GitHub 仓库、配置 `origin` 并让 `gh auth status` 成功，再按下节手工
+建立 environment 与 tag ruleset。Secret 的值无法再次查看，只能替换；长期凭据还必须在
+GitHub 之外保留恢复副本。
 
 ### 1. Developer ID 证书
 
@@ -67,7 +70,33 @@
 security find-identity -v -p codesigning | grep 'Developer ID Application'
 ```
 
-### 2. GitHub Actions Secrets
+### 2. 受保护的发布环境与 tag ruleset（必须手工配置）
+
+仓库代码**不能**替代 GitHub 的仓库级保护。首次发布前，在 **Settings → Environments**
+手工创建名为 `release-signing` 的 environment，并至少配置：
+
+- 指定一名或多名可信发布维护者为 required reviewers；可用时启用 prevent self-review；
+- deployment branches/tags 只允许 selected patterns 中的 `v*` tag；
+- 下文 6 个 Secrets 和 3 个 Variables 全部放在该 environment，而不是 repository scope。
+
+再在 **Settings → Rules → Rulesets** 建立 active tag ruleset，目标为 `v*`，限制 tag 的创建者，
+禁止非发布维护者更新或删除 release tag，并只给最小的紧急 bypass 列表。如果仓库计划支持，
+同时要求签名提交；但该选项不能代替 tag 本身的签名。required reviewer 应在批准 environment
+前核对 tag、commit、前置测试和预期版本。
+
+`release.yml` 还会在任何签名 secret 可见之前执行独立的代码门禁：只接受严格的
+`vMajor.Minor.Patch` annotated tag，通过 GitHub Git Tags REST API 要求
+`verification.verified=true` 且 `reason=valid`，确认 tag 直接指向当前 workflow commit，并从
+远端重新获取 `origin/main` 后用 `git merge-base --is-ancestor` 验证包含关系。这里使用 GitHub
+托管的签名验证结果，是因为一次性 runner 并没有维护者的 GPG/SSH trust material；直接运行
+`git tag -v` 会因为缺少可信公钥而成为不可工作的伪门禁。轻量 tag、GitHub 未验证的 tag、
+间接 tag 和 main 之外的 commit 都会失败。
+
+`scripts/configure-release.sh` 只会确认 `release-signing` 已存在并向其中写入 secret/variable；
+它有意**不会**创建或修改 environment、reviewer、deployment policy 或 ruleset，也不能宣称
+以下代码已经配置了这些仓库保护。
+
+### 3. GitHub Actions Secrets
 
 | Secret | 来源和用途 | 是否需要长期备份 |
 |---|---|---|
@@ -76,6 +105,7 @@ security find-identity -v -p codesigning | grep 'Developer ID Application'
 | `NOTARY_APPLE_ID` | Apple Developer Program 使用的 Apple Account 邮箱 | 是 |
 | `NOTARY_PASSWORD` | 在 Apple Account 网站生成的 app-specific password；不是登录密码 | 可撤销后重新生成 |
 | `SPARKLE_PRIVATE_KEY` | 下节导出的 Ed25519 私钥种子单行 Base64 | **必须长期离线备份** |
+| `DSYM_ARCHIVE_PASSWORD` | 使用 AES-256-CBC/PBKDF2 加密私有 dSYM workflow artifact 的 32+ 字符随机密码 | **必须长期离线备份** |
 
 推荐使用仓库提供的初始化脚本一次性验证并上传全部发布设置。默认模式逐项提示输入，值只
 保留在当前进程内；脚本通过标准输入调用 GitHub CLI，不把 secret 放进命令参数、shell
@@ -116,25 +146,28 @@ install -m 600 Documentation/release.variables.example \
 [GitHub CLI secret 文档](https://cli.github.com/manual/gh_secret_set) 与
 [GitHub Actions 安全使用指南](https://docs.github.com/en/actions/reference/security/secure-use)。
 
-如需逐项手工设置，`BUILD_CERTIFICATE_BASE64` 可以直接通过标准输入上传，避免生成额外
+如需逐项手工设置，`BUILD_CERTIFICATE_BASE64` 可以直接通过标准输入上传到受保护 environment，
+避免生成额外
 明文文件：
 
 ```bash
-base64 -i DeveloperID.p12 | gh secret set BUILD_CERTIFICATE_BASE64
-gh secret set P12_PASSWORD
-gh secret set NOTARY_APPLE_ID
-gh secret set NOTARY_PASSWORD
+base64 -i DeveloperID.p12 | gh secret set BUILD_CERTIFICATE_BASE64 --env release-signing
+gh secret set P12_PASSWORD --env release-signing
+gh secret set NOTARY_APPLE_ID --env release-signing
+gh secret set NOTARY_PASSWORD --env release-signing
+gh secret set DSYM_ARCHIVE_PASSWORD --env release-signing
 ```
 
-后三条命令会交互式读取输入。`NOTARY_PASSWORD` 在 Apple Account 的“登录与安全性 →
+后四条命令会交互式读取输入。`NOTARY_PASSWORD` 在 Apple Account 的“登录与安全性 →
 App 专用密码”中创建。也可以在 GitHub 网页中逐项粘贴；不要把敏感值写进带 `--body`
-的命令或 shell 历史。
+的命令或 shell 历史。`DSYM_ARCHIVE_PASSWORD` 可用 `openssl rand -base64 48` 生成并保存在
+密码管理器；丢失后已保留的 dSYM 无法恢复。
 
 `KEYCHAIN_PASSWORD` **不需要配置**。release job 每次使用 `openssl rand` 生成一个随机密码，
 只用于创建和解锁该次运行的临时钥匙串；job 结束后钥匙串和导入的 `.p12` 都会删除。它与
 `P12_PASSWORD` 是两个完全不同的概念。
 
-### 3. GitHub Actions Variables
+### 4. GitHub Actions Variables
 
 | Variable | 来源和用途 |
 |---|---|
@@ -147,8 +180,8 @@ App 专用密码”中创建。也可以在 GitHub 网页中逐项粘贴；不�
 前两个值可以立即配置：
 
 ```bash
-gh variable set DEVELOPER_ID_APPLICATION
-gh variable set NOTARY_TEAM_ID
+gh variable set DEVELOPER_ID_APPLICATION --env release-signing
+gh variable set NOTARY_TEAM_ID --env release-signing
 ```
 
 命令会交互式读取值；Sparkle 公钥在下一节生成后再设置。
@@ -156,23 +189,27 @@ gh variable set NOTARY_TEAM_ID
 配置后可以检查**名称是否齐全**；GitHub 不会返回 secret 的值：
 
 ```bash
-gh secret list
-gh variable list
+gh secret list --env release-signing
+gh variable list --env release-signing
 ```
 
-tag 发布时 workflow 也会在导入证书前检查这 5 个 Secrets 和 3 个 Variables；缺项时只
+tag 发布时 workflow 也会在导入证书前检查这 6 个 Secrets 和 3 个 Variables；缺项时只
 报告设置名称，不输出任何值，也不会继续执行签名或公证。
 
-### 4. Runner 配置
+### 5. Runner 配置
 
 普通 CI 与发布不需要注册 self-hosted runner。公开仓库直接使用 GitHub 标准
-`xcode-27`（Apple Silicon）和 `macos-26-intel` image；前者是 Xcode 27 的唯一编译环境，
-后者只启动前者生成的 Universal 2 交付物。`xcode-27` 当前是 public preview，因此每个 job
-都会显式检查 Xcode、Swift 与 CPU 架构，image 变化会快速失败而不是悄悄换工具链。计费与
-当前 image 状态以
+`xcode-27`（Apple Silicon）、`macos-26-intel` 和 `macos-14` image；前者是 Xcode 27 的唯一
+编译环境，后两者只启动前者生成的 Universal 2 交付物。GitHub runner-images 在
+2026-08-10 仍列出 `macos-14` ARM label，因此它可作为当前最低系统门禁；该 image 已进入
+弃用期并计划在 2026-11-02 后停止支持，届时必须迁移为一台锁定 macOS 14 的隔离
+self-hosted/external release gate，而不能编造 hosted label。`xcode-27` 当前是 public preview，
+因此每个 job 都会显式检查 Xcode、Swift、OS 与 CPU 架构，image 变化会快速失败而不是悄悄
+换工具链。计费、弃用与当前 image 状态以
 [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)、
 [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
-和 [Xcode 27 image 公告](https://github.blog/changelog/2026-07-16-xcode-27-runner-image-now-in-public-preview/)
+、[runner-images](https://github.com/actions/runner-images) 和
+[Xcode 27 image 公告](https://github.blog/changelog/2026-07-16-xcode-27-runner-image-now-in-public-preview/)
 为准。
 
 若要从 GitHub UI 运行 UA1 II 真机回归，才在仓库
@@ -204,8 +241,9 @@ xcodebuild -resolvePackageDependencies \
 ```bash
 .build/xcode/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys \
     --account "$SPARKLE_KEY_ACCOUNT" -x /secure/path/dacbar-sparkle-private-key
-gh secret set SPARKLE_PRIVATE_KEY < /secure/path/dacbar-sparkle-private-key
-gh variable set SPARKLE_PUBLIC_ED_KEY
+gh secret set SPARKLE_PRIVATE_KEY --env release-signing \
+    < /secure/path/dacbar-sparkle-private-key
+gh variable set SPARKLE_PUBLIC_ED_KEY --env release-signing
 ```
 
 最后一条命令会提示粘贴前一步 `generate_keys` 打印的公钥。
@@ -240,11 +278,12 @@ gh variable set SPARKLE_PUBLIC_ED_KEY
    ./build.sh release
    ```
 
-   GitHub CI 在 `xcode-27` 上运行 Swift 6.4 测试并生成唯一的 Universal 2 DMG；
-   `macos-26-intel` 下载该 DMG 并启动 x86_64 切片。tag 发布采用相同的交付物门禁：签名
-   和公证只执行一次，Intel 验证通过后才由不接触 secrets 的独立 job 创建 Release。
+   GitHub CI 在 `xcode-27` 上运行 Swift 6.4 测试并生成唯一的 Universal 2 DMG。tag 发布
+   签名和公证只执行一次；ARM、Intel 与 macOS 14 job 下载完全相同的候选产物，按 basename
+   验证 SHA-256、Gatekeeper、票据与启动后，才由不接触 secrets 的独立 job 创建 Release。
 
-3. 提交版本变更，然后创建与 Xcode 有效版本完全一致的签名 tag：
+3. 把版本变更合并到 `main`，等待 required checks 成功；再从最新 `origin/main` 创建与 Xcode
+   有效版本完全一致、GitHub 能验证其签名的 annotated tag：
 
    ```bash
    VERSION=$(./scripts/read-version.sh Distribution)
@@ -253,13 +292,25 @@ gh variable set SPARKLE_PUBLIC_ED_KEY
    ```
 
    `read-version.sh` 读取 Xcode 解析后的 build settings，而不是自行解析 xcconfig；因此
-   如果工程没有实际接入版本配置，tag 门禁会直接暴露问题。
+   如果工程没有实际接入版本配置，tag 门禁会直接暴露问题。推送后，environment reviewer
+   必须在 GitHub UI 核对签名 tag 和目标 commit 确实位于 `main`，再批准 `release-signing`。
 
 4. `release.yml` 会重新测试，通过 Xcode App Target 构建 Universal 2 App，在隔离的临时
    钥匙串中导入证书。流水线先通过临时 ZIP 提交 App 公证并给 App 装订票据，再创建
    APFS/LZFSE DMG、签名并公证该 DMG；临时 ZIP 不发布。最终为 DMG 和包含内嵌发布说明的
-   `appcast.xml` 生成 Ed25519 签名。候选 DMG 随后在 GitHub-hosted Intel Mac 上执行
-   Gatekeeper、票据、Universal 2 和启动验证；全部通过后才发布 DMG、SHA-256 与 appcast。
+   `appcast.xml` 生成 Ed25519 签名。候选 DMG 随后在 GitHub-hosted ARM、Intel 与 macOS 14
+   上执行 checksum、Gatekeeper、票据、Universal 2 和启动验证；全部通过后才发布 DMG、
+   SHA-256 与 appcast。匹配 App binary UUID 的 dSYM 会单独压缩，并用 environment 中的
+   `DSYM_ARCHIVE_PASSWORD` 经 AES-256-CBC/PBKDF2 加密后作为 Actions artifact 保留 90 天；
+   即使 public repository 的 workflow artifact 被下载也没有明文符号，且它不会复制到公开
+   release candidate 或 GitHub Release。恢复时从密码管理器读取密码并使用相同参数解密：
+
+   ```bash
+   DSYM_ARCHIVE_PASSWORD='<from-password-manager>' \
+   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+       -in DACBar-VERSION.dSYM.zip.enc -out DACBar-VERSION.dSYM.zip \
+       -pass env:DSYM_ARCHIVE_PASSWORD
+   ```
    临时 `.p12`、钥匙串和公证凭据无论成功失败都会清理，并随一次性签名 VM 一同销毁；
    拥有仓库写权限的最终发布 job 不接触这些 secrets。任何前置步骤失败都不会创建 Release。
 

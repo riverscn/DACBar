@@ -262,7 +262,12 @@ if [ -n "${DACBAR_NOTARY_PROFILE:-}" ]; then
     xcrun stapler staple "$DIST_DMG"
     DACBAR_EXPECTED_APP_ID="$EXPECTED_APP_ID" DACBAR_REQUIRE_DISTRIBUTION=1 \
         ./scripts/validate-dmg.sh "$DIST_DMG"
-    shasum -a 256 "$DIST_DMG" > "$DIST_DMG.sha256"
+    DIST_DMG_DIRECTORY=$(dirname "$DIST_DMG")
+    DIST_DMG_BASENAME=$(basename "$DIST_DMG")
+    (
+        cd "$DIST_DMG_DIRECTORY"
+        shasum -a 256 "$DIST_DMG_BASENAME" > "$DIST_DMG_BASENAME.sha256"
+    )
     echo "    分发镜像：$(pwd)/${DIST_DMG}"
     NOTARIZED=1
 fi

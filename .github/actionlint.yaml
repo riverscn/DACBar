@@ -1,0 +1,6 @@
+# xcode-27 is a GitHub-hosted public-preview label that actionlint 1.7.12 does
+# not yet know. DACBar-Hardware is the repository's explicit hardware label.
+self-hosted-runner:
+  labels:
+    - xcode-27
+    - DACBar-Hardware
