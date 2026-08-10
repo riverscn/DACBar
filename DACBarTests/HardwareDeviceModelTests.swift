@@ -31,8 +31,10 @@ struct HardwareDeviceModelTests {
         try await Task.sleep(for: .milliseconds(200))
         let target = try hardwareTarget()
         let watcher = SelectedHardwareWatcher(device: target)
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(),
+            selectionStore: selection.store,
             watcher: watcher
         ) { device in
             try ShanlingUA1II.Plugin().makeDriver(for: device.device)
@@ -65,11 +67,9 @@ struct HardwareDeviceModelTests {
         }
     }
 
-    private func isolatedSelectionStore() -> DeviceSelectionStore {
-        let suiteName = "DACBarTests.HardwareDeviceModel.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defaults.removePersistentDomain(forName: suiteName)
-        return DeviceSelectionStore(defaults: defaults)
+    private func isolatedSelectionStore() -> IsolatedSelectionStoreFixture {
+        IsolatedSelectionStoreFixture(
+            suitePrefix: "DACBarTests.HardwareDeviceModel")
     }
 
     private func hardwareTarget() throws -> AttachedDevice {

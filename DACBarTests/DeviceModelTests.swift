@@ -7,6 +7,25 @@ private enum TestFailure: Error {
     case transport
 }
 
+struct IsolatedSelectionStoreFixture {
+    let store: DeviceSelectionStore
+    private let defaults: UserDefaults
+    private let suiteName: String
+
+    init(suitePrefix: String) {
+        let suiteName = "\(suitePrefix).\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        self.suiteName = suiteName
+        self.defaults = defaults
+        self.store = DeviceSelectionStore(defaults: defaults)
+    }
+
+    func tearDown() {
+        defaults.removePersistentDomain(forName: suiteName)
+    }
+}
+
 private enum TestDevice {
     static let profile = DACDeviceKit.DeviceProfile(
         id: DACDeviceKit.ModelID(rawValue: "test.fixture"),
@@ -149,8 +168,10 @@ struct DeviceModelTests {
         let watcher = FakeWatcher(devices: [first])
         let connectionA = FakeConnection()
         let connectionB = FakeConnection(state: state(volume: 72))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { device in
             device.locationID == first.locationID ? connectionA : connectionB
         }
@@ -175,8 +196,10 @@ struct DeviceModelTests {
         let watcher = FakeWatcher(devices: [attached])
         let connection = FakeConnection(state: state(volume: 20))
         connection.submissionError = TestFailure.transport
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -197,8 +220,10 @@ struct DeviceModelTests {
         let attached = device(location: 0x0110_0000, registry: 1)
         let watcher = FakeWatcher(devices: [attached])
         let connection = FakeConnection(state: state(volume: 20))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -221,8 +246,10 @@ struct DeviceModelTests {
         let attached = device(location: 0x0110_0000, registry: 1)
         let watcher = FakeWatcher(devices: [attached])
         let connection = FakeConnection(state: state(volume: 20))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -259,8 +286,10 @@ struct DeviceModelTests {
             second.locationID: [FakeConnection(state: state(volume: 20))],
         ]
         var opened: [UInt32] = []
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { device in
             opened.append(device.locationID)
             return connections[device.locationID]!.removeFirst()
@@ -286,8 +315,10 @@ struct DeviceModelTests {
         let watcher = FakeWatcher(devices: [selected])
         let connection = FakeConnection(state: state(volume: 31))
         var openCount = 0
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { device in
             #expect(device == selected)
             openCount += 1
@@ -316,8 +347,10 @@ struct DeviceModelTests {
         let watcher = FakeWatcher(devices: [first])
         let connectionA = FakeConnection(state: state(volume: 20))
         let connectionB = FakeConnection(state: state(volume: 72))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { device in
             device == first ? connectionA : connectionB
         }
@@ -352,8 +385,10 @@ struct DeviceModelTests {
         let first = FakeConnection(state: state(volume: 20))
         let second = FakeConnection(state: state(volume: 42))
         var connections = [first, second]
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in
             connections.removeFirst()
         }
@@ -381,8 +416,10 @@ struct DeviceModelTests {
             .failure(TestFailure.transport),
             .success(state(volume: 37)),
         ]
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil(timeout: .seconds(2)) {
@@ -397,8 +434,10 @@ struct DeviceModelTests {
         let attached = device(location: 0x0110_0000, registry: 1)
         let watcher = FakeWatcher(devices: [attached])
         let connection = FakeConnection(state: state(volume: 20))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -431,8 +470,10 @@ struct DeviceModelTests {
         let watcher = FakeWatcher(
             devices: [], startError: TestFailure.transport)
         let connection = FakeConnection(state: state(volume: 35))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         guard case .failed = model.phase else {
@@ -458,8 +499,10 @@ struct DeviceModelTests {
         let attached = device(location: 0x0110_0000, registry: 1)
         let watcher = FakeWatcher(devices: [attached])
         let connection = FakeConnection(state: state(volume: 35))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -506,8 +549,10 @@ struct DeviceModelTests {
             writeRetryLimit: 0)
         let connection = FakeConnection(
             state: state(volume: 5), descriptor: descriptor)
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -557,8 +602,10 @@ struct DeviceModelTests {
         let attached = device(location: 0x0110_0000, registry: 1)
         let watcher = FakeWatcher(devices: [attached])
         let connection = FakeConnection(state: state(volume: 20))
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -590,8 +637,10 @@ struct DeviceModelTests {
             writeRetryLimit: 0)
         let connection = FakeConnection(
             state: state(volume: 6), descriptor: descriptor)
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil { model.phase == .ready }
@@ -607,8 +656,10 @@ struct DeviceModelTests {
     @Test("Shortcut volume fails closed while the selected DAC is unavailable")
     func shortcutVolumeRequiresReadyDevice() async {
         let watcher = FakeWatcher(devices: [])
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in
             Issue.record("A disconnected shortcut must not open a driver")
             return FakeConnection()
@@ -671,8 +722,10 @@ struct DeviceModelTests {
             writeRetryLimit: 0)
         let connection = FakeConnection(
             state: DACDeviceKit.Snapshot(), descriptor: descriptor)
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
         let model = DeviceModel(
-            selectionStore: isolatedSelectionStore(), watcher: watcher
+            selectionStore: selection.store, watcher: watcher
         ) { _ in connection }
 
         try await waitUntil {
@@ -710,11 +763,8 @@ struct DeviceModelTests {
             firmware: "01.00.00")
     }
 
-    private func isolatedSelectionStore() -> DeviceSelectionStore {
-        let suiteName = "DACBarTests.DeviceModel.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defaults.removePersistentDomain(forName: suiteName)
-        return DeviceSelectionStore(defaults: defaults)
+    private func isolatedSelectionStore() -> IsolatedSelectionStoreFixture {
+        IsolatedSelectionStoreFixture(suitePrefix: "DACBarTests.DeviceModel")
     }
 
     private func waitUntil(
