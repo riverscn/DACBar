@@ -1,9 +1,5 @@
 import SwiftUI
 
-enum AppWindowID {
-    static let settings = "settings"
-}
-
 @main
 @MainActor
 struct DACBarApp: App {
@@ -43,10 +39,7 @@ struct DACBarApp: App {
         }
         .menuBarExtraStyle(.window)
 
-        Window(
-            AppL10n.text("settings.window-title", defaultValue: "DACBar Settings"),
-            id: AppWindowID.settings
-        ) {
+        Settings {
             SettingsView(
                 model: model,
                 hotKeys: hotKeys,
@@ -55,6 +48,5 @@ struct DACBarApp: App {
         }
         .defaultSize(width: 560, height: 400)
         .windowResizability(.contentMinSize)
-        .keyboardShortcut(",", modifiers: .command)
     }
 }

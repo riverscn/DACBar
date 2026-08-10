@@ -4,7 +4,7 @@ import AppKit
 struct ContentView: View {
     @Bindable var model: DeviceModel
     let updates: UpdateController
-    @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(spacing: 0) {
@@ -175,7 +175,7 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             Button {
-                openWindow(id: AppWindowID.settings)
+                openSettings()
                 // DACBar is an LSUIElement accessory app. Opening the scene is
                 // not sufficient to bring its window above the active regular
                 // app, so explicitly activate only for this user action.
