@@ -505,6 +505,66 @@ struct DeviceModelTests {
         ])
     }
 
+    @Test("Shortcut volume steps use the selected driver's mutation path")
+    func shortcutVolumeUsesSelectedDriver() async throws {
+        let attached = device(location: 0x0110_0000, registry: 1)
+        let watcher = FakeWatcher(devices: [attached])
+        let connection = FakeConnection(state: state(volume: 20))
+        let model = DeviceModel(watcher: watcher) { _ in connection }
+
+        try await waitUntil { model.phase == .ready }
+        #expect(model.adjustVolume(bySteps: 1))
+        try await waitUntil { connection.submitted.count == 1 }
+
+        #expect(model.draft.volume == 21)
+        #expect(connection.submitted == [
+            DACDeviceKit.Mutation(setting: .volume, value: 21)
+        ])
+    }
+
+    @Test("Shortcut volume respects the selected driver's step and range")
+    func shortcutVolumeRespectsDriverRange() async throws {
+        let attached = device(location: 0x0110_0000, registry: 1)
+        let watcher = FakeWatcher(devices: [attached])
+        let volume = DACDeviceKit.SettingDescriptor(
+            id: .volume,
+            title: "音量",
+            systemImage: "speaker.wave.2",
+            group: .audio,
+            presentation: .range(
+                minimum: 0, maximum: 9, step: 2, format: .number))
+        let descriptor = DACDeviceKit.DriverDescriptor(
+            settings: [volume],
+            readback: .complete,
+            confirmation: .acknowledgement,
+            readRetryDelays: [],
+            writeRetryLimit: 0)
+        let connection = FakeConnection(
+            state: state(volume: 6), descriptor: descriptor)
+        let model = DeviceModel(watcher: watcher) { _ in connection }
+
+        try await waitUntil { model.phase == .ready }
+        #expect(model.adjustVolume(bySteps: 1))
+        try await waitUntil { connection.submitted.count == 1 }
+        #expect(model.draft.volume == 8)
+        #expect(!model.adjustVolume(bySteps: 1))
+        #expect(connection.submitted == [
+            DACDeviceKit.Mutation(setting: .volume, value: 8)
+        ])
+    }
+
+    @Test("Shortcut volume fails closed while the selected DAC is unavailable")
+    func shortcutVolumeRequiresReadyDevice() async {
+        let watcher = FakeWatcher(devices: [])
+        let model = DeviceModel(watcher: watcher) { _ in
+            Issue.record("A disconnected shortcut must not open a driver")
+            return FakeConnection()
+        }
+
+        #expect(!model.adjustVolume(bySteps: 1))
+        #expect(model.phase == .disconnected)
+    }
+
     private func device(location: UInt32, registry: UInt64) -> AttachedDevice {
         AttachedDevice(
             profile: TestDevice.profile,

@@ -10,9 +10,15 @@ final class UpdateController {
     private let controller: SPUStandardUpdaterController?
     @ObservationIgnored
     private var canCheckObservation: NSKeyValueObservation?
+    @ObservationIgnored
+    private var automaticChecksObservation: NSKeyValueObservation?
+    @ObservationIgnored
+    private var automaticDownloadsObservation: NSKeyValueObservation?
 
     var isConfigured: Bool { controller != nil }
     private(set) var canCheckForUpdates = false
+    private(set) var automaticallyChecksForUpdates = false
+    private(set) var automaticallyDownloadsUpdates = false
 
     init(bundle: Bundle = .main) {
         guard Self.hasValidConfiguration(bundle) else {
@@ -25,6 +31,8 @@ final class UpdateController {
             userDriverDelegate: nil)
         self.controller = controller
         canCheckForUpdates = controller.updater.canCheckForUpdates
+        automaticallyChecksForUpdates = controller.updater.automaticallyChecksForUpdates
+        automaticallyDownloadsUpdates = controller.updater.automaticallyDownloadsUpdates
         canCheckObservation = controller.updater.observe(
             \.canCheckForUpdates,
             options: [.initial, .new]
@@ -34,10 +42,44 @@ final class UpdateController {
                 self?.canCheckForUpdates = canCheckForUpdates
             }
         }
+        automaticChecksObservation = controller.updater.observe(
+            \.automaticallyChecksForUpdates,
+            options: [.initial, .new]
+        ) { [weak self] _, change in
+            guard let value = change.newValue else { return }
+            Task { @MainActor [weak self] in
+                self?.automaticallyChecksForUpdates = value
+                if value == false {
+                    self?.automaticallyDownloadsUpdates = false
+                }
+            }
+        }
+        automaticDownloadsObservation = controller.updater.observe(
+            \.automaticallyDownloadsUpdates,
+            options: [.initial, .new]
+        ) { [weak self] _, change in
+            guard let value = change.newValue else { return }
+            Task { @MainActor [weak self] in
+                self?.automaticallyDownloadsUpdates = value
+            }
+        }
     }
 
     func check() {
         controller?.checkForUpdates(nil)
+    }
+
+    func setAutomaticallyChecksForUpdates(_ enabled: Bool) {
+        guard let updater = controller?.updater else { return }
+        updater.automaticallyChecksForUpdates = enabled
+        automaticallyChecksForUpdates = updater.automaticallyChecksForUpdates
+        automaticallyDownloadsUpdates = updater.automaticallyDownloadsUpdates
+    }
+
+    func setAutomaticallyDownloadsUpdates(_ enabled: Bool) {
+        guard let updater = controller?.updater else { return }
+        updater.automaticallyDownloadsUpdates = enabled
+        automaticallyDownloadsUpdates = updater.automaticallyDownloadsUpdates
     }
 
     nonisolated static func hasValidConfiguration(_ bundle: Bundle) -> Bool {

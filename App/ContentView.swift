@@ -4,6 +4,7 @@ import AppKit
 struct ContentView: View {
     @Bindable var model: DeviceModel
     let updates: UpdateController
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -173,6 +174,23 @@ struct ContentView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             Spacer()
+            Button {
+                openWindow(id: AppWindowID.settings)
+                // DACBar is an LSUIElement accessory app. Opening the scene is
+                // not sufficient to bring its window above the active regular
+                // app, so explicitly activate only for this user action.
+                Task { @MainActor in
+                    await Task.yield()
+                    NSApp.activate()
+                }
+            } label: {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.plain)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .help(AppL10n.text("settings.open", defaultValue: "Settings…"))
+            .accessibilityLabel(AppL10n.text("settings.open", defaultValue: "Settings…"))
             if updates.isConfigured {
                 Button {
                     updates.check()

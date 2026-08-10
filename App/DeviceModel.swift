@@ -376,6 +376,43 @@ final class DeviceModel {
         scheduleApply()
     }
 
+    /// Moves the selected DAC by logical volume steps. Global shortcuts use
+    /// this same capability-driven mutation path as the slider, so they inherit
+    /// the active driver's validation, coalescing, pacing, and retry behavior.
+    /// No Core Audio default-device assumption is made: exclusive players may
+    /// own the selected DAC while macOS keeps a different default output.
+    @discardableResult
+    func adjustVolume(bySteps stepCount: Int) -> Bool {
+        guard isReady, stepCount != 0,
+              let descriptor = settings.first(where: { $0.id == .volume }),
+              case .range(let minimum, let maximum, let step, _) = descriptor.presentation,
+              step > 0,
+              let current = draft[.volume],
+              (try? descriptor.validate(current)) != nil
+        else { return false }
+
+        let delta = stepCount.multipliedReportingOverflow(by: step)
+        guard !delta.overflow else { return false }
+        let candidate = current.addingReportingOverflow(delta.partialValue)
+        let target: Int
+        if stepCount < 0, candidate.overflow || candidate.partialValue < minimum {
+            target = minimum
+        } else if stepCount > 0, candidate.overflow || candidate.partialValue > maximum {
+            // `maximum` is not required to be a step boundary. Stop at the
+            // highest value reachable from the current valid value instead.
+            let distance = maximum.subtractingReportingOverflow(current)
+            guard !distance.overflow else { return false }
+            target = current + (distance.partialValue / step) * step
+        } else {
+            target = candidate.partialValue
+        }
+        guard target != current, (try? descriptor.validate(target)) != nil else {
+            return false
+        }
+        updateDraft(.volume, value: target)
+        return true
+    }
+
     func scheduleApply() {
         guard isReady, let driver else { return }
         guard sent != draft else { return }

@@ -1,10 +1,31 @@
 import SwiftUI
 
+enum AppWindowID {
+    static let settings = "settings"
+}
+
 @main
 @MainActor
 struct DACBarApp: App {
-    @State private var model = DeviceModel()
-    @State private var updates = UpdateController()
+    @State private var model: DeviceModel
+    @State private var updates: UpdateController
+    @State private var hotKeys: GlobalHotKeyController
+    @State private var launchAtLogin: LaunchAtLoginController
+
+    init() {
+        let model = DeviceModel()
+        _model = State(initialValue: model)
+        _updates = State(initialValue: UpdateController())
+        _launchAtLogin = State(initialValue: LaunchAtLoginController())
+        _hotKeys = State(initialValue: GlobalHotKeyController { direction in
+            switch direction {
+            case .increase:
+                model.adjustVolume(bySteps: 1)
+            case .decrease:
+                model.adjustVolume(bySteps: -1)
+            }
+        })
+    }
 
     var body: some Scene {
         MenuBarExtra {
@@ -21,5 +42,19 @@ struct DACBarApp: App {
                     : AppL10n.text("app.accessibility.device-absent", defaultValue: "No device detected"))
         }
         .menuBarExtraStyle(.window)
+
+        Window(
+            AppL10n.text("settings.window-title", defaultValue: "DACBar Settings"),
+            id: AppWindowID.settings
+        ) {
+            SettingsView(
+                model: model,
+                hotKeys: hotKeys,
+                launchAtLogin: launchAtLogin,
+                updates: updates)
+        }
+        .defaultSize(width: 560, height: 400)
+        .windowResizability(.contentMinSize)
+        .keyboardShortcut(",", modifiers: .command)
     }
 }

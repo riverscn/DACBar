@@ -32,6 +32,12 @@
 		200000000000000000000017 /* DACDeviceKit in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000004 /* DACDeviceKit */; };
 		200000000000000000000018 /* ShanlingUA1II in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000005 /* ShanlingUA1II */; };
 		200000000000000000000019 /* AppIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11000000000000000000000F /* AppIdentity.swift */; };
+		20000000000000000000001A /* HotKeyShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000010 /* HotKeyShortcut.swift */; };
+		20000000000000000000001B /* GlobalHotKeyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000011 /* GlobalHotKeyController.swift */; };
+		20000000000000000000001C /* HotKeyRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000012 /* HotKeyRecorder.swift */; };
+		20000000000000000000001D /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000013 /* LaunchAtLoginController.swift */; };
+		20000000000000000000001E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000014 /* SettingsView.swift */; };
+		20000000000000000000001F /* HotKeyShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000004 /* HotKeyShortcutTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +66,11 @@
 		11000000000000000000000D /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		11000000000000000000000E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		11000000000000000000000F /* AppIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIdentity.swift; sourceTree = "<group>"; };
+		110000000000000000000010 /* HotKeyShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyShortcut.swift; sourceTree = "<group>"; };
+		110000000000000000000011 /* GlobalHotKeyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyController.swift; sourceTree = "<group>"; };
+		110000000000000000000012 /* HotKeyRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyRecorder.swift; sourceTree = "<group>"; };
+		110000000000000000000013 /* LaunchAtLoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginController.swift; sourceTree = "<group>"; };
+		110000000000000000000014 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		120000000000000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer; path = AppIcon.icon; sourceTree = "<group>"; };
 		120000000000000000000002 /* DACBar.Local.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DACBar.Local.entitlements; sourceTree = "<group>"; };
 		120000000000000000000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -69,6 +80,7 @@
 		130000000000000000000001 /* DeviceModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModelTests.swift; sourceTree = "<group>"; };
 		130000000000000000000002 /* HardwareDeviceModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareDeviceModelTests.swift; sourceTree = "<group>"; };
 		130000000000000000000003 /* UpdateControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateControllerTests.swift; sourceTree = "<group>"; };
+		130000000000000000000004 /* HotKeyShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyShortcutTests.swift; sourceTree = "<group>"; };
 		140000000000000000000001 /* DACBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DACBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		140000000000000000000002 /* DACBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DACBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -116,9 +128,14 @@
 				110000000000000000000005 /* DeviceGlyph.swift */,
 				110000000000000000000006 /* DeviceModel.swift */,
 				110000000000000000000007 /* DeviceWatcher.swift */,
+				110000000000000000000011 /* GlobalHotKeyController.swift */,
+				110000000000000000000012 /* HotKeyRecorder.swift */,
+				110000000000000000000010 /* HotKeyShortcut.swift */,
+				110000000000000000000013 /* LaunchAtLoginController.swift */,
 				110000000000000000000008 /* Localization.swift */,
 				110000000000000000000009 /* PanelStyle.swift */,
 				11000000000000000000000A /* SettingExplainer.swift */,
+				110000000000000000000014 /* SettingsView.swift */,
 				11000000000000000000000B /* SnapshotConvenience.swift */,
 				11000000000000000000000C /* SupportedDevices.swift */,
 				11000000000000000000000D /* UpdateController.swift */,
@@ -145,6 +162,7 @@
 				130000000000000000000001 /* DeviceModelTests.swift */,
 				130000000000000000000002 /* HardwareDeviceModelTests.swift */,
 				130000000000000000000003 /* UpdateControllerTests.swift */,
+				130000000000000000000004 /* HotKeyShortcutTests.swift */,
 			);
 			path = DACBarTests;
 			sourceTree = "<group>";
@@ -284,9 +302,14 @@
 				200000000000000000000005 /* DeviceGlyph.swift in Sources */,
 				200000000000000000000006 /* DeviceModel.swift in Sources */,
 				200000000000000000000007 /* DeviceWatcher.swift in Sources */,
+				20000000000000000000001B /* GlobalHotKeyController.swift in Sources */,
+				20000000000000000000001C /* HotKeyRecorder.swift in Sources */,
+				20000000000000000000001A /* HotKeyShortcut.swift in Sources */,
+				20000000000000000000001D /* LaunchAtLoginController.swift in Sources */,
 				200000000000000000000008 /* Localization.swift in Sources */,
 				200000000000000000000009 /* PanelStyle.swift in Sources */,
 				20000000000000000000000A /* SettingExplainer.swift in Sources */,
+				20000000000000000000001E /* SettingsView.swift in Sources */,
 				20000000000000000000000B /* SnapshotConvenience.swift in Sources */,
 				20000000000000000000000C /* SupportedDevices.swift in Sources */,
 				20000000000000000000000D /* UpdateController.swift in Sources */,
@@ -300,6 +323,7 @@
 				200000000000000000000014 /* DeviceModelTests.swift in Sources */,
 				200000000000000000000015 /* HardwareDeviceModelTests.swift in Sources */,
 				200000000000000000000016 /* UpdateControllerTests.swift in Sources */,
+				20000000000000000000001F /* HotKeyShortcutTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
