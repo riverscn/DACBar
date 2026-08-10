@@ -2,6 +2,11 @@ import Carbon.HIToolbox
 import Foundation
 import Observation
 
+struct HotKeyEventIdentifier: Equatable, Sendable {
+    let signature: OSType
+    let id: UInt32
+}
+
 @MainActor
 struct GlobalHotKeyPlatform {
     enum TokenResult {
@@ -10,7 +15,7 @@ struct GlobalHotKeyPlatform {
     }
 
     let installEventHandler:
-        (@escaping @MainActor @Sendable (UInt32) -> Void) -> TokenResult
+        (@escaping @MainActor @Sendable (HotKeyEventIdentifier) -> Void) -> TokenResult
     let removeEventHandler: (AnyObject) -> Void
     let registerHotKey: (HotKeyShortcut, HotKeyDirection) -> TokenResult
     let unregisterHotKey: (AnyObject) -> Void
@@ -61,9 +66,9 @@ struct GlobalHotKeyPlatform {
 }
 
 private final class CarbonHotKeyEventContext: @unchecked Sendable {
-    let delivery: @MainActor @Sendable (UInt32) -> Void
+    let delivery: @MainActor @Sendable (HotKeyEventIdentifier) -> Void
 
-    init(delivery: @escaping @MainActor @Sendable (UInt32) -> Void) {
+    init(delivery: @escaping @MainActor @Sendable (HotKeyEventIdentifier) -> Void) {
         self.delivery = delivery
     }
 }
@@ -103,8 +108,10 @@ nonisolated private let carbonHotKeyEventHandler: EventHandlerUPP = {
     let context = Unmanaged<CarbonHotKeyEventContext>
         .fromOpaque(userData).takeUnretainedValue()
     let delivery = context.delivery
+    let routedIdentifier = HotKeyEventIdentifier(
+        signature: identifier.signature, id: identifier.id)
     Task { @MainActor in
-        delivery(identifier.id)
+        delivery(routedIdentifier)
     }
     return noErr
 }
@@ -267,11 +274,12 @@ final class GlobalHotKeyController {
         registrations.removeAll()
     }
 
-    private func received(identifier: UInt32) {
-        guard isEnabled,
+    private func received(identifier: HotKeyEventIdentifier) {
+        guard identifier.signature == Self.signature,
+              isEnabled,
               recordingSuspensionCount == 0,
               status == .registered,
-              let direction = HotKeyDirection(rawValue: identifier)
+              let direction = HotKeyDirection(rawValue: identifier.id)
         else { return }
         onDirection(direction)
     }

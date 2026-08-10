@@ -170,14 +170,34 @@ struct HotKeyShortcutTests {
             onDirection: { delivered.append($0) })
 
         #expect(controller.status == .registered)
-        fake.deliver(HotKeyDirection.increase.rawValue)
-        fake.deliver(99)
-        fake.deliver(HotKeyDirection.decrease.rawValue)
+        fake.deliver(signature: 0x4441_4342, id: HotKeyDirection.increase.rawValue)
+        fake.deliver(signature: 0x4441_4342, id: 99)
+        fake.deliver(signature: 0x4441_4342, id: HotKeyDirection.decrease.rawValue)
         #expect(delivered == [.increase, .decrease])
 
         controller.setEnabled(false)
-        fake.deliver(HotKeyDirection.increase.rawValue)
+        fake.deliver(signature: 0x4441_4342, id: HotKeyDirection.increase.rawValue)
         #expect(delivered == [.increase, .decrease])
+    }
+
+    @MainActor
+    @Test("Foreign Carbon hot-key signatures are ignored")
+    func foreignCarbonSignatureIsIgnored() {
+        let (defaults, suiteName) = makeEnabledDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let fake = HotKeyPlatformFake()
+        var delivered: [HotKeyDirection] = []
+        let controller = GlobalHotKeyController(
+            defaults: defaults,
+            platform: fake.platform(),
+            onDirection: { delivered.append($0) })
+
+        #expect(controller.status == .registered)
+        fake.deliver(signature: 0x5445_5354, id: HotKeyDirection.increase.rawValue)
+        #expect(delivered.isEmpty)
+
+        fake.deliver(signature: 0x4441_4342, id: HotKeyDirection.increase.rawValue)
+        #expect(delivered == [.increase])
     }
 
     @MainActor
@@ -193,11 +213,12 @@ struct HotKeyShortcutTests {
             removeEventHandler: live.removeEventHandler,
             registerHotKey: registration.registerHotKey,
             unregisterHotKey: registration.unregisterHotKey)
-        var delivered: [HotKeyDirection] = []
+        let deliveries = AsyncStream.makeStream(of: HotKeyDirection.self)
+        defer { deliveries.continuation.finish() }
         let controller = GlobalHotKeyController(
             defaults: defaults,
             platform: platform,
-            onDirection: { delivered.append($0) })
+            onDirection: { deliveries.continuation.yield($0) })
         #expect(controller.status == .registered)
 
         var createdEvent: EventRef?
@@ -210,7 +231,7 @@ struct HotKeyShortcutTests {
             &createdEvent) == noErr)
         let event = try #require(createdEvent)
         defer { ReleaseEvent(event) }
-        var identifier = EventHotKeyID(signature: 0x5445_5354, id: 1) // "TEST"
+        var identifier = EventHotKeyID(signature: 0x4441_4342, id: 1) // "DACB"
         #expect(SetEventParameter(
             event,
             EventParamName(kEventParamDirectObject),
@@ -219,10 +240,9 @@ struct HotKeyShortcutTests {
             &identifier) == noErr)
         #expect(SendEventToEventTarget(event, GetApplicationEventTarget()) == noErr)
 
-        for _ in 0..<10 where delivered.isEmpty {
-            await Task.yield()
-        }
-        #expect(delivered == [.increase])
+        let delivered = try await firstHotKeyDelivery(
+            from: deliveries.stream, timeout: .seconds(1))
+        #expect(delivered == .increase)
     }
 
     @MainActor
@@ -250,7 +270,7 @@ private final class HotKeyPlatformFake {
     private(set) var registeredDirections: [HotKeyDirection] = []
     private(set) var unregisteredDirections: [HotKeyDirection] = []
     private(set) var removedHandlerCount = 0
-    private var delivery: (@MainActor @Sendable (UInt32) -> Void)?
+    private var delivery: (@MainActor @Sendable (HotKeyEventIdentifier) -> Void)?
 
     func platform() -> GlobalHotKeyPlatform {
         GlobalHotKeyPlatform(
@@ -279,7 +299,36 @@ private final class HotKeyPlatformFake {
             })
     }
 
-    func deliver(_ identifier: UInt32) {
-        delivery?(identifier)
+    func deliver(signature: OSType, id: UInt32) {
+        delivery?(HotKeyEventIdentifier(signature: signature, id: id))
+    }
+}
+
+private enum HotKeyDeliveryTestError: Error {
+    case streamFinished
+    case timeout
+}
+
+private func firstHotKeyDelivery(
+    from stream: AsyncStream<HotKeyDirection>,
+    timeout: Duration
+) async throws -> HotKeyDirection {
+    try await withThrowingTaskGroup(of: HotKeyDirection.self) { group in
+        group.addTask {
+            var iterator = stream.makeAsyncIterator()
+            guard let direction = await iterator.next() else {
+                throw HotKeyDeliveryTestError.streamFinished
+            }
+            return direction
+        }
+        group.addTask {
+            try await Task.sleep(for: timeout)
+            throw HotKeyDeliveryTestError.timeout
+        }
+        guard let direction = try await group.next() else {
+            throw HotKeyDeliveryTestError.streamFinished
+        }
+        group.cancelAll()
+        return direction
     }
 }
