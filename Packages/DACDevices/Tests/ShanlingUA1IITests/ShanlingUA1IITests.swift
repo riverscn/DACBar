@@ -111,29 +111,122 @@ struct ShanlingUA1IITests {
         }
     }
 
-    @Test("A timed-out write only consumes a matching late ACK within its grace window")
+    @Test("A late ACK is terminally ignored after its submission timed out")
     func lateAcknowledgementGraceWindow() throws {
         let write = try ShanlingUA1II.Write(.volume, 21)
         let other = try ShanlingUA1II.Write(.volume, 22)
         let start = ContinuousClock.now
-        var acknowledgements = ShanlingUA1II.LateAcknowledgements(
-            retention: .seconds(2))
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let id = session.reserve(write)
 
-        acknowledgements.remember(write, now: start)
-        let consumedOther = acknowledgements.consume(
-            other, now: start + .milliseconds(10))
-        let consumedWrite = acknowledgements.consume(
-            write, now: start + .milliseconds(20))
-        let consumedTwice = acknowledgements.consume(
-            write, now: start + .milliseconds(30))
-        #expect(!consumedOther)
-        #expect(consumedWrite)
-        #expect(!consumedTwice)
+        #expect(session.timeout(id, now: start) == write)
+        #expect(session.timeout(id, now: start + .milliseconds(1)) == nil)
+        #expect(session.acknowledge(other, now: start + .milliseconds(10))
+                == .unmatched(other))
+        #expect(session.acknowledge(write, now: start + .milliseconds(20))
+                == .ignoredLate(id, write))
+        #expect(session.acknowledge(write, now: start + .milliseconds(30))
+                == .unmatched(write))
+    }
 
-        acknowledgements.remember(write, now: start)
-        let consumedExpired = acknowledgements.consume(
-            write, now: start + .seconds(2))
-        #expect(!consumedExpired)
+    @Test("An identical retry is confirmed when only one ACK arrives")
+    func identicalRetryWithOneAcknowledgement() throws {
+        let write = try ShanlingUA1II.Write(.volume, 21)
+        let start = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let first = session.reserve(write)
+
+        #expect(session.timeout(first, now: start) == write)
+        let retry = session.reserve(write)
+
+        // The wire cannot reveal whether this is S1's late ACK or S2's normal
+        // ACK. It must satisfy the current idempotent intent so a successfully
+        // applied retry cannot time out merely because S1's ACK was lost.
+        #expect(session.acknowledge(write, now: start + .milliseconds(10))
+                == .confirmed(retry, write))
+        #expect(session.timeout(retry, now: start + .milliseconds(20)) == nil)
+    }
+
+    @Test("Two ACKs for an identical retry produce only one confirmation")
+    func identicalRetryWithTwoAcknowledgements() throws {
+        let write = try ShanlingUA1II.Write(.volume, 21)
+        let start = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let first = session.reserve(write)
+
+        #expect(session.timeout(first, now: start) == write)
+        let retry = session.reserve(write)
+
+        #expect(session.acknowledge(write, now: start + .milliseconds(10))
+                == .confirmed(retry, write))
+        #expect(session.acknowledge(write, now: start + .milliseconds(20))
+                == .ignoredLate(first, write))
+        #expect(session.acknowledge(write, now: start + .milliseconds(30))
+                == .unmatched(write))
+        #expect(session.timeout(retry, now: start + .milliseconds(40)) == nil)
+    }
+
+    @Test("Identical pending writes confirm in submission order")
+    func identicalPendingWritesAreFIFO() throws {
+        let write = try ShanlingUA1II.Write(.brightness, 6)
+        let now = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let first = session.reserve(write)
+        let second = session.reserve(write)
+
+        #expect(session.acknowledge(write, now: now) == .confirmed(first, write))
+        #expect(session.acknowledge(write, now: now) == .confirmed(second, write))
+        #expect(session.acknowledge(write, now: now) == .unmatched(write))
+    }
+
+    @Test("Cancelling a reservation cannot later produce a terminal result")
+    func cancelledReservationIsRemoved() throws {
+        let write = try ShanlingUA1II.Write(.gain, 1)
+        let now = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let id = session.reserve(write)
+
+        session.cancel(id)
+
+        #expect(session.timeout(id, now: now) == nil)
+        #expect(session.acknowledge(write, now: now) == .unmatched(write))
+    }
+
+    @Test("Closing session state cancels all pending terminal results")
+    func removingSessionStateClearsPendingAndLateEntries() throws {
+        let timedOut = try ShanlingUA1II.Write(.volume, 21)
+        let pending = try ShanlingUA1II.Write(.brightness, 6)
+        let now = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let timedOutID = session.reserve(timedOut)
+        let pendingID = session.reserve(pending)
+        #expect(session.timeout(timedOutID, now: now) == timedOut)
+
+        session.removeAll()
+
+        #expect(session.timeout(pendingID, now: now) == nil)
+        #expect(session.acknowledge(timedOut, now: now) == .unmatched(timedOut))
+        #expect(session.acknowledge(pending, now: now) == .unmatched(pending))
+    }
+
+    @Test("Late ACK debt remains bounded by its grace window")
+    func lateAcknowledgementDebtExpires() throws {
+        let write = try ShanlingUA1II.Write(.volume, 21)
+        let start = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let first = session.reserve(write)
+        #expect(session.timeout(first, now: start) == write)
+        let retry = session.reserve(write)
+
+        #expect(session.acknowledge(write, now: start + .seconds(2))
+                == .confirmed(retry, write))
     }
 
     private func reply(page: UInt8, bytes: [UInt8]) -> [UInt8] {
