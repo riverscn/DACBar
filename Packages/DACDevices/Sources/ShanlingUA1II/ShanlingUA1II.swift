@@ -313,56 +313,6 @@ public enum ShanlingUA1II {
         }
     }
 
-    /// A bounded grace window for acknowledgements that arrive after their
-    /// write timeout. Without this distinction, a late ACK is indistinguishable
-    /// from a physical device change and can roll the UI back over a newer
-    /// slider value.
-    struct LateAcknowledgements {
-        private struct Entry {
-            let write: Write
-            let expiresAt: ContinuousClock.Instant
-        }
-
-        private let retention: Duration
-        private let capacity: Int
-        private var entries: [Entry] = []
-
-        init(retention: Duration, capacity: Int = 16) {
-            self.retention = retention
-            self.capacity = max(1, capacity)
-        }
-
-        mutating func remember(
-            _ write: Write,
-            now: ContinuousClock.Instant = .now
-        ) {
-            prune(now: now)
-            entries.append(Entry(write: write, expiresAt: now + retention))
-            if entries.count > capacity {
-                entries.removeFirst(entries.count - capacity)
-            }
-        }
-
-        mutating func consume(
-            _ write: Write,
-            now: ContinuousClock.Instant = .now
-        ) -> Bool {
-            prune(now: now)
-            guard let index = entries.firstIndex(where: { $0.write == write })
-            else { return false }
-            entries.remove(at: index)
-            return true
-        }
-
-        mutating func removeAll() {
-            entries.removeAll()
-        }
-
-        private mutating func prune(now: ContinuousClock.Instant) {
-            entries.removeAll { $0.expiresAt <= now }
-        }
-    }
-
     /// An open connection to one dongle: writes settings, reads state, and
     /// reports changes made on the device itself.
     ///
@@ -410,12 +360,6 @@ public enum ShanlingUA1II {
             let continuation: CheckedContinuation<Void, any Error>
         }
 
-        private struct Outstanding {
-            let write: Write
-            let id: Int
-            var timeoutTask: Task<Void, Never>?
-        }
-
         private let manager: IOHIDManager
         private let device: IOHIDDevice
         private let runLoop: CFRunLoop
@@ -431,10 +375,11 @@ public enum ShanlingUA1II {
         private var nextWaiterID = 0
         private var backlog: [[UInt8]] = []
 
-        private var outstanding: [Outstanding] = []
-        private var lateAcknowledgements = LateAcknowledgements(
-            retention: .seconds(2))
-        private var nextOutstandingID = 0
+        private var acknowledgementSession = AcknowledgementSession(
+            debtRetention: .seconds(2))
+        private var acknowledgementTimeouts: [
+            AcknowledgementSession.SubmissionID: Task<Void, Never>
+        ] = [:]
 
         public init(
             locationID: UInt32? = nil,
@@ -520,9 +465,9 @@ public enum ShanlingUA1II {
                 gateWaiter.continuation.resume(throwing: Failure.removed)
             }
             transactionWaiters.removeAll()
-            for item in outstanding { item.timeoutTask?.cancel() }
-            outstanding.removeAll()
-            lateAcknowledgements.removeAll()
+            for task in acknowledgementTimeouts.values { task.cancel() }
+            acknowledgementTimeouts.removeAll()
+            acknowledgementSession.removeAll()
             backlog.removeAll()
 
             onChange = nil
@@ -592,17 +537,16 @@ public enum ShanlingUA1II {
                     if backlog.count > 8 { backlog.removeFirst(backlog.count - 8) }
                 }
             case .acknowledgement(let write):
-                if let index = outstanding.firstIndex(where: { $0.write == write }) {
-                    let confirmed = outstanding.remove(at: index)
-                    confirmed.timeoutTask?.cancel()
+                switch acknowledgementSession.acknowledge(write) {
+                case .confirmed(let id, _):
+                    acknowledgementTimeouts.removeValue(forKey: id)?.cancel()
                     ShanlingUA1II.logger.debug(
-                        "ACK matched id=\(confirmed.id, privacy: .public) command=\(write.command.rawValue, privacy: .public) value=\(write.value, privacy: .public)")
+                        "ACK matched id=\(id, privacy: .public) command=\(write.command.rawValue, privacy: .public) value=\(write.value, privacy: .public)")
                     onConfirmed?(write)
-                } else if lateAcknowledgements.consume(write) {
+                case .ignoredLate(let id, _):
                     ShanlingUA1II.logger.info(
-                        "Late ACK confirmed a timed-out write command=\(write.command.rawValue, privacy: .public) value=\(write.value, privacy: .public)")
-                    onConfirmed?(write)
-                } else {
+                        "Ignored late ACK for dropped id=\(id, privacy: .public) command=\(write.command.rawValue, privacy: .public) value=\(write.value, privacy: .public)")
+                case .unmatched:
                     ShanlingUA1II.logger.info(
                         "Unmatched ACK treated as device change command=\(write.command.rawValue, privacy: .public) value=\(write.value, privacy: .public)")
                     onChange?(write)
@@ -705,16 +649,14 @@ public enum ShanlingUA1II {
         }
 
         private func reserve(_ write: Write) -> Int {
-            nextOutstandingID += 1
-            let id = nextOutstandingID
-            outstanding.append(Outstanding(write: write, id: id, timeoutTask: nil))
+            let id = acknowledgementSession.reserve(write)
             ShanlingUA1II.logger.debug(
                 "Reserved ACK id=\(id, privacy: .public) command=\(write.command.rawValue, privacy: .public) value=\(write.value, privacy: .public)")
             return id
         }
 
         private func armTimeout(id: Int) {
-            guard let index = outstanding.firstIndex(where: { $0.id == id }) else {
+            guard acknowledgementSession.contains(id) else {
                 // The ACK arrived while the asynchronous output call was still
                 // awaiting its completion callback.
                 return
@@ -726,20 +668,19 @@ public enum ShanlingUA1II {
                     return
                 }
                 guard let self,
-                      let index = self.outstanding.firstIndex(where: { $0.id == id })
+                      let dropped = self.acknowledgementSession.timeout(id)
                 else { return }
-                let dropped = self.outstanding.remove(at: index).write
-                self.lateAcknowledgements.remember(dropped)
+                self.acknowledgementTimeouts.removeValue(forKey: id)
                 ShanlingUA1II.logger.error(
                     "ACK timed out id=\(id, privacy: .public) command=\(dropped.command.rawValue, privacy: .public) value=\(dropped.value, privacy: .public)")
                 self.onDropped?(dropped)
             }
-            outstanding[index].timeoutTask = timeoutTask
+            acknowledgementTimeouts[id] = timeoutTask
         }
 
         private func discardOutstanding(id: Int) {
-            guard let index = outstanding.firstIndex(where: { $0.id == id }) else { return }
-            outstanding.remove(at: index).timeoutTask?.cancel()
+            acknowledgementSession.cancel(id)
+            acknowledgementTimeouts.removeValue(forKey: id)?.cancel()
         }
 
         private func pace() async throws {
