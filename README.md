@@ -11,14 +11,14 @@ Shanling UA1 II（`20B1:3033`）；厂商品牌只存在于对应的设备模块
 | 路径 | 说明 |
 |---|---|
 | `DACBar.xcodeproj` | 原生 macOS App、App tests、共享 Scheme 和发布入口 |
-| `App/` | App 入口、SwiftUI、业务模型、组合根、Sparkle 与本地化资源 |
+| `DACBar/` | `DACBar` App target 的入口、SwiftUI、业务模型、组合根、Sparkle 与本地化资源 |
 | `DACBarTests/` | 由 Xcode test target 托管的 App/业务层测试 |
 | `Packages/DACDevices/` | 可独立测试的设备 SDK；包含厂商无关核心与 UA1 II plug-in |
 | [`Documentation/Architecture.md`](Documentation/Architecture.md) | 多型号 Profile、Driver、能力与 UI 扩展边界 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 用户可见的版本变更 |
 | [`Documentation/Releasing.md`](Documentation/Releasing.md) | CI、Developer ID、公证和发布流程 |
 | [`tools/capture.c`](tools/capture.c) | 命令行诊断工具 |
-| [`tools/make-icon.swift`](tools/make-icon.swift) | 生成 `App/Resources/AppIcon.icon` |
+| [`tools/make-icon.swift`](tools/make-icon.swift) | 生成 `DACBar/Resources/AppIcon.icon` |
 
 ## 快速开始
 
@@ -77,7 +77,7 @@ debug 和 release 都生成同时支持 Apple Silicon 与 Intel Mac 的 Universa
 
 目前只有 `hidService + hidReports + shanling.ua1-ii.hid` 有实际 backend；源码里其它 discovery
 和 transport 枚举只是预留词汇，不表示对应型号已经可用。支持范围以
-`App/SupportedDevices.swift` 的组合结果为准。
+`DACBar/Application/SupportedDevices.swift` 的组合结果为准。
 
 设备的厂商控制通道挂在接口 2 的 HID 上，而 macOS 的 HID 驱动允许非独占访问——
 读写都不需要抢占它，也就不需要任何特权组件：
@@ -265,7 +265,7 @@ SDK 则来自当前 Xcode；因此仍能在 macOS 14+ 运行，同时使用新 S
 **签名带安全时间戳。** 它是公证的前置条件；ad-hoc 无法加时间戳，所以那条路径
 显式关闭。
 
-默认 Bundle ID 只在 `App/Configuration/Identity.xcconfig` 中维护。分发时必须同时
+默认 Bundle ID 只在 `DACBar/Configuration/Identity.xcconfig` 中维护。分发时必须同时
 指定 Developer ID 证书、公证配置、Sparkle appcast 地址和 Ed25519 公钥：
 
 ```bash
@@ -288,15 +288,15 @@ DACBAR_SPARKLE_PUBLIC_KEY=<Base64-encoded-Ed25519-public-key> \
 | `DACBAR_SPARKLE_FEED_URL` | Sparkle appcast 的 HTTPS 地址；公证构建必填 |
 | `DACBAR_SPARKLE_PUBLIC_KEY` | 用于验证更新归档的 32 字节 Ed25519 公钥（Base64）；公证构建必填 |
 
-App 身份只在 `App/Configuration/Identity.xcconfig` 中维护，脚本通过 Xcode 的有效
+App 身份只在 `DACBar/Configuration/Identity.xcconfig` 中维护，脚本通过 Xcode 的有效
 `PRODUCT_BUNDLE_IDENTIFIER` 读取它；用户可见版本只在
-`App/Configuration/Version.xcconfig` 的 `MARKETING_VERSION` 中维护；
+`DACBar/Configuration/Version.xcconfig` 的 `MARKETING_VERSION` 中维护；
 Xcode Run、`build.sh`、Git tag、DMG 和 Sparkle appcast 都从该有效设置或构建后的 App
 读取。CI 只覆盖递增的 `CURRENT_PROJECT_VERSION`，不会改写用户版本。
 
 ### 应用图标
 
-`App/Resources/AppIcon.icon` 已入库，改动后用 `swift tools/make-icon.swift` 重新生成。
+`DACBar/Resources/AppIcon.icon` 已入库，改动后用 `swift tools/make-icon.swift` 重新生成。
 
 这是 Icon Composer 的 `.icon` 格式——一个目录，含 JSON 清单和图层美术。
 Xcode App Target 用 asset catalog compiler 编译，同时产出 `Assets.car`（macOS 26 走

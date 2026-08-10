@@ -1,6 +1,6 @@
 #!/usr/bin/env swift
 //
-// Generates App/Resources/AppIcon.icon — an Icon Composer document.
+// Generates DACBar/Resources/AppIcon.icon — an Icon Composer document.
 //
 //     swift tools/make-icon.swift
 //
@@ -263,7 +263,7 @@ let manifest = """
 
 let fm = FileManager.default
 let root = URL(fileURLWithPath: fm.currentDirectoryPath)
-let icon = root.appendingPathComponent("App/Resources/AppIcon.icon")
+let icon = root.appendingPathComponent("DACBar/Resources/AppIcon.icon")
 let assets = icon.appendingPathComponent("Assets")
 
 try fm.createDirectory(at: assets, withIntermediateDirectories: true)
@@ -287,8 +287,8 @@ for element in elements {
 // so the manifest has to be edited to match.
 let manifestURL = icon.appendingPathComponent("icon.json")
 if fm.fileExists(atPath: manifestURL.path) {
-    print("已更新 App/Resources/AppIcon.icon/Assets/（保留现有 icon.json）")
+    print("已更新 DACBar/Resources/AppIcon.icon/Assets/（保留现有 icon.json）")
 } else {
     try Data(manifest.utf8).write(to: manifestURL)
-    print("已生成 App/Resources/AppIcon.icon")
+    print("已生成 DACBar/Resources/AppIcon.icon")
 }

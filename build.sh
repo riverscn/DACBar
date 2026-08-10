@@ -175,7 +175,7 @@ if [ -n "$SIGN_KEYCHAIN" ]; then
 fi
 APP_SIGN_ARGS=("${ARGS[@]}")
 if [ "$SIGN_ID" = "-" ]; then
-    APP_SIGN_ARGS+=(--entitlements App/Configuration/DACBar.Local.entitlements)
+    APP_SIGN_ARGS+=(--entitlements DACBar/Configuration/DACBar.Local.entitlements)
 fi
 
 # Sparkle's retained helpers are nested code. Sign from the innermost helpers

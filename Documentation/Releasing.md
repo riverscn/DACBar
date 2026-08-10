@@ -2,12 +2,12 @@
 
 ## 发布契约
 
-- `App/Configuration/Version.xcconfig` 中的 `MARKETING_VERSION` 是
+- `DACBar/Configuration/Version.xcconfig` 中的 `MARKETING_VERSION` 是
   `CFBundleShortVersionString` 和 Git tag 的唯一来源，格式固定为三段数字
   `Major.Minor.Patch`。
 - `CURRENT_PROJECT_VERSION` 只提供本地 Xcode fallback；分发时 GitHub Actions 使用
   递增的 `github.run_number` 覆盖它，最终 `CFBundleVersion` 必须是正整数。
-- `App/Configuration/Identity.xcconfig` 中的 `DACBAR_BUNDLE_IDENTIFIER` 是 Bundle ID
+- `DACBar/Configuration/Identity.xcconfig` 中的 `DACBAR_BUNDLE_IDENTIFIER` 是 Bundle ID
   的唯一来源；App、测试 target、构建脚本、验证脚本和运行时日志都从 Xcode 的有效
   build setting 或构建产物派生。构建环境不提供覆盖入口；迁移身份必须显式修改该文件，
   并同时规划偏好设置、签名与 Sparkle 更新连续性。
@@ -262,7 +262,7 @@ gh variable set SPARKLE_PUBLIC_ED_KEY --env release-signing
 
 ## 发布步骤
 
-1. 更新 `App/Configuration/Version.xcconfig` 中的 `MARKETING_VERSION` 和
+1. 更新 `DACBar/Configuration/Version.xcconfig` 中的 `MARKETING_VERSION` 和
    `CHANGELOG.md`，把本次内容从 Unreleased 移入新版本。不要直接编辑 Info.plist、
    pbxproj 或生成的 App 来改版本。
 2. 本地执行：
