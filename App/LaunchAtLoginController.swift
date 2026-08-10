@@ -2,6 +2,31 @@ import Observation
 import ServiceManagement
 
 @MainActor
+struct LaunchAtLoginPlatform {
+    let state: () -> LaunchAtLoginController.State
+    let register: () throws -> Void
+    let unregister: () throws -> Void
+    let openSystemSettings: () -> Void
+
+    static let live: LaunchAtLoginPlatform = {
+        let service = SMAppService.mainApp
+        return LaunchAtLoginPlatform(
+            state: {
+                switch service.status {
+                case .enabled: .enabled
+                case .requiresApproval: .requiresApproval
+                case .notFound: .unavailable
+                case .notRegistered: .disabled
+                @unknown default: .unavailable
+                }
+            },
+            register: { try service.register() },
+            unregister: { try service.unregister() },
+            openSystemSettings: { SMAppService.openSystemSettingsLoginItems() })
+    }()
+}
+
+@MainActor
 @Observable
 final class LaunchAtLoginController {
     enum State: Equatable {
@@ -14,9 +39,10 @@ final class LaunchAtLoginController {
     private(set) var state: State = .disabled
     private(set) var errorMessage: String?
 
-    @ObservationIgnored private let service = SMAppService.mainApp
+    @ObservationIgnored private let platform: LaunchAtLoginPlatform
 
-    init() {
+    init(platform: LaunchAtLoginPlatform = .live) {
+        self.platform = platform
         refresh()
     }
 
@@ -26,22 +52,16 @@ final class LaunchAtLoginController {
     var isEnabled: Bool { state == .enabled || state == .requiresApproval }
 
     func refresh() {
-        state = switch service.status {
-        case .enabled: .enabled
-        case .requiresApproval: .requiresApproval
-        case .notFound: .unavailable
-        case .notRegistered: .disabled
-        @unknown default: .unavailable
-        }
+        state = platform.state()
     }
 
     func setEnabled(_ enabled: Bool) {
         errorMessage = nil
         do {
             if enabled {
-                try service.register()
+                try platform.register()
             } else {
-                try service.unregister()
+                try platform.unregister()
             }
             refresh()
         } catch {
@@ -51,6 +71,6 @@ final class LaunchAtLoginController {
     }
 
     func openSystemSettings() {
-        SMAppService.openSystemSettingsLoginItems()
+        platform.openSystemSettings()
     }
 }

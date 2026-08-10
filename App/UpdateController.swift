@@ -3,83 +3,122 @@ import Foundation
 import Observation
 import Sparkle
 
-@Observable
 @MainActor
-final class UpdateController {
-    @ObservationIgnored
-    private let controller: SPUStandardUpdaterController?
-    @ObservationIgnored
-    private var canCheckObservation: NSKeyValueObservation?
-    @ObservationIgnored
-    private var automaticChecksObservation: NSKeyValueObservation?
-    @ObservationIgnored
-    private var automaticDownloadsObservation: NSKeyValueObservation?
+struct UpdatePlatform {
+    let canCheckForUpdates: () -> Bool
+    let automaticallyChecksForUpdates: () -> Bool
+    let automaticallyDownloadsUpdates: () -> Bool
+    let checkForUpdates: () -> Void
+    let setAutomaticallyChecksForUpdates: (Bool) -> Void
+    let setAutomaticallyDownloadsUpdates: (Bool) -> Void
+    let observeCanCheckForUpdates:
+        (@escaping @MainActor @Sendable (Bool) -> Void) -> AnyObject
+    let observeAutomaticallyChecksForUpdates:
+        (@escaping @MainActor @Sendable (Bool) -> Void) -> AnyObject
+    let observeAutomaticallyDownloadsUpdates:
+        (@escaping @MainActor @Sendable (Bool) -> Void) -> AnyObject
 
-    var isConfigured: Bool { controller != nil }
-    private(set) var canCheckForUpdates = false
-    private(set) var automaticallyChecksForUpdates = false
-    private(set) var automaticallyDownloadsUpdates = false
-
-    init(bundle: Bundle = .main) {
-        guard Self.hasValidConfiguration(bundle) else {
-            controller = nil
-            return
-        }
+    static func live() -> UpdatePlatform {
         let controller = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
             userDriverDelegate: nil)
-        self.controller = controller
-        canCheckForUpdates = controller.updater.canCheckForUpdates
-        automaticallyChecksForUpdates = controller.updater.automaticallyChecksForUpdates
-        automaticallyDownloadsUpdates = controller.updater.automaticallyDownloadsUpdates
-        canCheckObservation = controller.updater.observe(
-            \.canCheckForUpdates,
-            options: [.initial, .new]
-        ) { [weak self] _, change in
-            guard let canCheckForUpdates = change.newValue else { return }
-            Task { @MainActor [weak self] in
-                self?.canCheckForUpdates = canCheckForUpdates
-            }
-        }
-        automaticChecksObservation = controller.updater.observe(
-            \.automaticallyChecksForUpdates,
-            options: [.initial, .new]
-        ) { [weak self] _, change in
-            guard let value = change.newValue else { return }
-            Task { @MainActor [weak self] in
-                self?.automaticallyChecksForUpdates = value
-                if value == false {
-                    self?.automaticallyDownloadsUpdates = false
+        let updater = controller.updater
+        return UpdatePlatform(
+            canCheckForUpdates: { updater.canCheckForUpdates },
+            automaticallyChecksForUpdates: { updater.automaticallyChecksForUpdates },
+            automaticallyDownloadsUpdates: { updater.automaticallyDownloadsUpdates },
+            checkForUpdates: { controller.checkForUpdates(nil) },
+            setAutomaticallyChecksForUpdates: {
+                updater.automaticallyChecksForUpdates = $0
+            },
+            setAutomaticallyDownloadsUpdates: {
+                updater.automaticallyDownloadsUpdates = $0
+            },
+            observeCanCheckForUpdates: { delivery in
+                updater.observe(\.canCheckForUpdates, options: [.initial, .new]) {
+                    _, change in
+                    guard let value = change.newValue else { return }
+                    Task { @MainActor in delivery(value) }
                 }
+            },
+            observeAutomaticallyChecksForUpdates: { delivery in
+                updater.observe(
+                    \.automaticallyChecksForUpdates, options: [.initial, .new]
+                ) { _, change in
+                    guard let value = change.newValue else { return }
+                    Task { @MainActor in delivery(value) }
+                }
+            },
+            observeAutomaticallyDownloadsUpdates: { delivery in
+                updater.observe(
+                    \.automaticallyDownloadsUpdates, options: [.initial, .new]
+                ) { _, change in
+                    guard let value = change.newValue else { return }
+                    Task { @MainActor in delivery(value) }
+                }
+            })
+    }
+}
+
+@Observable
+@MainActor
+final class UpdateController {
+    @ObservationIgnored
+    private let platform: UpdatePlatform?
+    @ObservationIgnored
+    private var canCheckObservation: AnyObject?
+    @ObservationIgnored
+    private var automaticChecksObservation: AnyObject?
+    @ObservationIgnored
+    private var automaticDownloadsObservation: AnyObject?
+
+    var isConfigured: Bool { platform != nil }
+    private(set) var canCheckForUpdates = false
+    private(set) var automaticallyChecksForUpdates = false
+    private(set) var automaticallyDownloadsUpdates = false
+
+    convenience init(bundle: Bundle = .main) {
+        self.init(platform: Self.hasValidConfiguration(bundle) ? .live() : nil)
+    }
+
+    init(platform: UpdatePlatform?) {
+        self.platform = platform
+        guard let platform else { return }
+        canCheckForUpdates = platform.canCheckForUpdates()
+        automaticallyChecksForUpdates = platform.automaticallyChecksForUpdates()
+        automaticallyDownloadsUpdates = platform.automaticallyDownloadsUpdates()
+        canCheckObservation = platform.observeCanCheckForUpdates { [weak self] value in
+            self?.canCheckForUpdates = value
+        }
+        automaticChecksObservation = platform.observeAutomaticallyChecksForUpdates {
+            [weak self] value in
+            self?.automaticallyChecksForUpdates = value
+            if value == false {
+                self?.automaticallyDownloadsUpdates = false
             }
         }
-        automaticDownloadsObservation = controller.updater.observe(
-            \.automaticallyDownloadsUpdates,
-            options: [.initial, .new]
-        ) { [weak self] _, change in
-            guard let value = change.newValue else { return }
-            Task { @MainActor [weak self] in
-                self?.automaticallyDownloadsUpdates = value
-            }
+        automaticDownloadsObservation = platform.observeAutomaticallyDownloadsUpdates {
+            [weak self] value in
+            self?.automaticallyDownloadsUpdates = value
         }
     }
 
     func check() {
-        controller?.checkForUpdates(nil)
+        platform?.checkForUpdates()
     }
 
     func setAutomaticallyChecksForUpdates(_ enabled: Bool) {
-        guard let updater = controller?.updater else { return }
-        updater.automaticallyChecksForUpdates = enabled
-        automaticallyChecksForUpdates = updater.automaticallyChecksForUpdates
-        automaticallyDownloadsUpdates = updater.automaticallyDownloadsUpdates
+        guard let platform else { return }
+        platform.setAutomaticallyChecksForUpdates(enabled)
+        automaticallyChecksForUpdates = platform.automaticallyChecksForUpdates()
+        automaticallyDownloadsUpdates = platform.automaticallyDownloadsUpdates()
     }
 
     func setAutomaticallyDownloadsUpdates(_ enabled: Bool) {
-        guard let updater = controller?.updater else { return }
-        updater.automaticallyDownloadsUpdates = enabled
-        automaticallyDownloadsUpdates = updater.automaticallyDownloadsUpdates
+        guard let platform else { return }
+        platform.setAutomaticallyDownloadsUpdates(enabled)
+        automaticallyDownloadsUpdates = platform.automaticallyDownloadsUpdates()
     }
 
     nonisolated static func hasValidConfiguration(_ bundle: Bundle) -> Bool {

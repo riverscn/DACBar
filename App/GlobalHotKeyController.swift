@@ -2,6 +2,120 @@ import Carbon.HIToolbox
 import Foundation
 import Observation
 
+struct HotKeyEventIdentifier: Equatable, Sendable {
+    let signature: OSType
+    let id: UInt32
+}
+
+@MainActor
+struct GlobalHotKeyPlatform {
+    enum TokenResult {
+        case success(AnyObject)
+        case failure(OSStatus)
+    }
+
+    let installEventHandler:
+        (@escaping @MainActor @Sendable (HotKeyEventIdentifier) -> Void) -> TokenResult
+    let removeEventHandler: (AnyObject) -> Void
+    let registerHotKey: (HotKeyShortcut, HotKeyDirection) -> TokenResult
+    let unregisterHotKey: (AnyObject) -> Void
+
+    static let live = GlobalHotKeyPlatform(
+        installEventHandler: { delivery in
+            let context = CarbonHotKeyEventContext(delivery: delivery)
+            var eventType = EventTypeSpec(
+                eventClass: OSType(kEventClassKeyboard),
+                eventKind: UInt32(kEventHotKeyPressed))
+            var handler: EventHandlerRef?
+            let result = InstallEventHandler(
+                GetApplicationEventTarget(),
+                carbonHotKeyEventHandler,
+                1,
+                &eventType,
+                Unmanaged.passUnretained(context).toOpaque(),
+                &handler)
+            guard result == noErr, let handler else {
+                return .failure(result == noErr ? OSStatus(eventInternalErr) : result)
+            }
+            return .success(CarbonEventHandlerToken(handler: handler, context: context))
+        },
+        removeEventHandler: { token in
+            guard let token = token as? CarbonEventHandlerToken else { return }
+            RemoveEventHandler(token.handler)
+        },
+        registerHotKey: { shortcut, direction in
+            var reference: EventHotKeyRef?
+            let identifier = EventHotKeyID(
+                signature: GlobalHotKeyController.signature, id: direction.rawValue)
+            let result = RegisterEventHotKey(
+                shortcut.keyCode,
+                shortcut.modifiers.carbonFlags,
+                identifier,
+                GetApplicationEventTarget(),
+                0,
+                &reference)
+            guard result == noErr, let reference else {
+                return .failure(result == noErr ? OSStatus(eventInternalErr) : result)
+            }
+            return .success(CarbonHotKeyToken(reference: reference))
+        },
+        unregisterHotKey: { token in
+            guard let token = token as? CarbonHotKeyToken else { return }
+            UnregisterEventHotKey(token.reference)
+        })
+}
+
+private final class CarbonHotKeyEventContext: @unchecked Sendable {
+    let delivery: @MainActor @Sendable (HotKeyEventIdentifier) -> Void
+
+    init(delivery: @escaping @MainActor @Sendable (HotKeyEventIdentifier) -> Void) {
+        self.delivery = delivery
+    }
+}
+
+private final class CarbonEventHandlerToken {
+    let handler: EventHandlerRef
+    // Carbon keeps an unretained pointer to this context until handler removal.
+    let context: CarbonHotKeyEventContext
+
+    init(handler: EventHandlerRef, context: CarbonHotKeyEventContext) {
+        self.handler = handler
+        self.context = context
+    }
+}
+
+private final class CarbonHotKeyToken {
+    let reference: EventHotKeyRef
+
+    init(reference: EventHotKeyRef) {
+        self.reference = reference
+    }
+}
+
+nonisolated private let carbonHotKeyEventHandler: EventHandlerUPP = {
+    _, event, userData in
+    guard let event, let userData else { return OSStatus(eventNotHandledErr) }
+    var identifier = EventHotKeyID()
+    let result = GetEventParameter(
+        event,
+        EventParamName(kEventParamDirectObject),
+        EventParamType(typeEventHotKeyID),
+        nil,
+        MemoryLayout<EventHotKeyID>.size,
+        nil,
+        &identifier)
+    guard result == noErr else { return result }
+    let context = Unmanaged<CarbonHotKeyEventContext>
+        .fromOpaque(userData).takeUnretainedValue()
+    let delivery = context.delivery
+    let routedIdentifier = HotKeyEventIdentifier(
+        signature: identifier.signature, id: identifier.id)
+    Task { @MainActor in
+        delivery(routedIdentifier)
+    }
+    return noErr
+}
+
 enum HotKeyDirection: UInt32, Sendable {
     case increase = 1
     case decrease = 2
@@ -25,18 +139,21 @@ final class GlobalHotKeyController {
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let onDirection: (HotKeyDirection) -> Void
-    @ObservationIgnored private var eventHandler: EventHandlerRef?
+    @ObservationIgnored private let platform: GlobalHotKeyPlatform
+    @ObservationIgnored private var eventHandler: AnyObject?
     @ObservationIgnored private var handlerInstallationResult: OSStatus = noErr
-    @ObservationIgnored private var registrations: [UInt32: EventHotKeyRef] = [:]
+    @ObservationIgnored private var registrations: [UInt32: AnyObject] = [:]
     @ObservationIgnored private var recordingSuspensionCount = 0
 
-    private static let signature: OSType = 0x4441_4342 // "DACB"
+    fileprivate static let signature: OSType = 0x4441_4342 // "DACB"
 
     init(
         defaults: UserDefaults = .standard,
+        platform: GlobalHotKeyPlatform = .live,
         onDirection: @escaping (HotKeyDirection) -> Void
     ) {
         self.defaults = defaults
+        self.platform = platform
         self.onDirection = onDirection
         isEnabled = defaults.bool(forKey: AppPreferenceKey.hotKeysEnabled)
         volumeUp = Self.loadShortcut(
@@ -48,22 +165,20 @@ final class GlobalHotKeyController {
             fallback: .defaultVolumeDown,
             defaults: defaults)
 
-        var eventType = EventTypeSpec(
-            eventClass: OSType(kEventClassKeyboard),
-            eventKind: UInt32(kEventHotKeyPressed))
-        handlerInstallationResult = InstallEventHandler(
-            GetApplicationEventTarget(),
-            Self.eventHandlerCallback,
-            1,
-            &eventType,
-            Unmanaged.passUnretained(self).toOpaque(),
-            &eventHandler)
+        switch platform.installEventHandler({ [weak self] identifier in
+            self?.received(identifier: identifier)
+        }) {
+        case .success(let eventHandler):
+            self.eventHandler = eventHandler
+        case .failure(let result):
+            handlerInstallationResult = result
+        }
         applyRegistration()
     }
 
     isolated deinit {
         unregisterAll()
-        if let eventHandler { RemoveEventHandler(eventHandler) }
+        if let eventHandler { platform.removeEventHandler(eventHandler) }
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -140,61 +255,33 @@ final class GlobalHotKeyController {
             (HotKeyDirection.increase, volumeUp),
             (HotKeyDirection.decrease, volumeDown),
         ] {
-            var reference: EventHotKeyRef?
-            let identifier = EventHotKeyID(
-                signature: Self.signature, id: direction.rawValue)
-            let result = RegisterEventHotKey(
-                shortcut.keyCode,
-                shortcut.modifiers.carbonFlags,
-                identifier,
-                GetApplicationEventTarget(),
-                0,
-                &reference)
-            guard result == noErr, let reference else {
+            switch platform.registerHotKey(shortcut, direction) {
+            case .success(let reference):
+                registrations[direction.rawValue] = reference
+            case .failure(let result):
                 unregisterAll()
                 status = .failed(result)
                 return
             }
-            registrations[direction.rawValue] = reference
         }
         status = .registered
     }
 
     private func unregisterAll() {
         for reference in registrations.values {
-            UnregisterEventHotKey(reference)
+            platform.unregisterHotKey(reference)
         }
         registrations.removeAll()
     }
 
-    private func received(identifier: UInt32) {
-        guard isEnabled,
+    private func received(identifier: HotKeyEventIdentifier) {
+        guard identifier.signature == Self.signature,
+              isEnabled,
               recordingSuspensionCount == 0,
               status == .registered,
-              let direction = HotKeyDirection(rawValue: identifier)
+              let direction = HotKeyDirection(rawValue: identifier.id)
         else { return }
         onDirection(direction)
-    }
-
-    nonisolated private static let eventHandlerCallback: EventHandlerUPP = {
-        _, event, userData in
-        guard let event, let userData else { return OSStatus(eventNotHandledErr) }
-        var identifier = EventHotKeyID()
-        let result = GetEventParameter(
-            event,
-            EventParamName(kEventParamDirectObject),
-            EventParamType(typeEventHotKeyID),
-            nil,
-            MemoryLayout<EventHotKeyID>.size,
-            nil,
-            &identifier)
-        guard result == noErr else { return result }
-        let controller = Unmanaged<GlobalHotKeyController>
-            .fromOpaque(userData).takeUnretainedValue()
-        Task { @MainActor in
-            controller.received(identifier: identifier.id)
-        }
-        return noErr
     }
 
     private static func loadShortcut(
