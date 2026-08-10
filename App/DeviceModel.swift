@@ -125,7 +125,7 @@ final class DeviceModel {
     func select(_ device: AttachedDevice) {
         guard device != selected else { return }
         selected = device
-        selectionStore.save(device)
+        selectionStore.replaceSelection(with: device)
         connect(to: device)
     }
 

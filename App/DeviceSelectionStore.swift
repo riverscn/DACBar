@@ -30,12 +30,19 @@ struct DeviceSelectionStore {
               })
         else { return nil }
 
-        save(device)
-        defaults.removeObject(forKey: Self.legacySelectionKey)
+        replaceSelection(with: device)
         return device
     }
 
+    /// Records an automatic fallback without discarding a legacy selection
+    /// that has not yet appeared for migration.
     func save(_ device: AttachedDevice) {
         defaults.set(device.persistedSelection, forKey: Self.selectionKey)
+    }
+
+    /// A user choice or completed migration supersedes every older identity.
+    func replaceSelection(with device: AttachedDevice) {
+        save(device)
+        defaults.removeObject(forKey: Self.legacySelectionKey)
     }
 }

@@ -729,6 +729,43 @@ struct DeviceModelTests {
             forKey: DeviceSelectionStore.legacySelectionKey) == nil)
     }
 
+    @Test("An explicit selection supersedes an unmatched legacy device")
+    func explicitSelectionClearsUnmatchedLegacyDevice() async throws {
+        let fallback = device(location: 0x0110_0000, registry: 1)
+        let chosen = device(location: 0x0210_0000, registry: 2)
+        let remembered = device(location: 0x0310_0000, registry: 3)
+        let suiteName = "DACBarTests.SelectionReplacement.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(
+            Int(remembered.locationID),
+            forKey: DeviceSelectionStore.legacySelectionKey)
+        let watcher = FakeWatcher(devices: [fallback, chosen])
+        let model = DeviceModel(
+            selectionStore: DeviceSelectionStore(defaults: defaults),
+            watcher: watcher
+        ) { _ in FakeConnection(state: self.state(volume: 20)) }
+
+        try await waitUntil { model.phase == .ready }
+        #expect(model.selected == fallback)
+
+        model.select(chosen)
+        try await waitUntil {
+            model.phase == .ready && model.selected == chosen
+        }
+        #expect(defaults.string(forKey: DeviceSelectionStore.selectionKey)
+            == chosen.persistedSelection)
+        #expect(defaults.object(
+            forKey: DeviceSelectionStore.legacySelectionKey) == nil)
+
+        watcher.publish([fallback, remembered])
+        try await waitUntil {
+            model.phase == .ready && model.selected == fallback
+        }
+        #expect(model.selected != remembered)
+    }
+
     @Test("Selection stores do not share preference domains")
     func selectionStoresAreIsolated() {
         let attached = device(location: 0x0110_0000, registry: 1)
