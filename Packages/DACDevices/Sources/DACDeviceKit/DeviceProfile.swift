@@ -113,7 +113,8 @@ extension DACDeviceKit {
     public struct DeviceRegistry: Sendable {
         public let profiles: [DeviceProfile]
 
-        public init(profiles: [DeviceProfile]) {
+        public init(profiles: [DeviceProfile]) throws {
+            try Self.validate(profiles)
             self.profiles = profiles
         }
 
@@ -142,29 +143,60 @@ extension DACDeviceKit {
                         && match.outputReportSize == outputReportSize
                 }
             }
-            guard !candidates.isEmpty else { return nil }
-
-            // A unique USB/HID signature is authoritative even if a firmware
-            // revision changes or localizes its product string. Shared IDs must
-            // be disambiguated by an exact normalized model name.
-            if candidates.count == 1 { return candidates[0] }
-            let normalized = Self.normalize(productName)
-            return candidates.first { profile in
-                profile.productNames.contains {
-                    Self.normalize($0) == normalized
-                        || normalized.hasSuffix(" " + Self.normalize($0))
-                }
-            }
+            // Composition rejects cross-profile shared signatures because each
+            // plug-in currently enumerates independently. Product names remain
+            // descriptive aliases, not a cross-plug-in ownership mechanism.
+            return candidates.count == 1 ? candidates[0] : nil
         }
 
         public func profile(id: ModelID) -> DeviceProfile? {
             profiles.first { $0.id == id }
         }
 
-        private static func normalize(_ value: String) -> String {
-            value.split(whereSeparator: { $0.isWhitespace })
-                .joined(separator: " ")
-                .lowercased()
+        private static func validate(_ profiles: [DeviceProfile]) throws {
+            var modelIDs: Set<ModelID> = []
+            var driverIDs: Set<DriverID> = []
+            var owners: [HIDMatch: [DeviceProfile]] = [:]
+
+            for profile in profiles {
+                guard !profile.id.rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .isEmpty else { throw ConfigurationFailure.emptyModelID }
+                guard !profile.driverID.rawValue
+                    .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                else { throw ConfigurationFailure.emptyDriverID }
+                guard modelIDs.insert(profile.id).inserted else {
+                    throw ConfigurationFailure.duplicateModelID(profile.id)
+                }
+                guard driverIDs.insert(profile.driverID).inserted else {
+                    throw ConfigurationFailure.duplicateDriverID(profile.driverID)
+                }
+                if profile.discoveryKind == .hidService, profile.hidMatches.isEmpty {
+                    throw ConfigurationFailure.missingHIDMatch(profile.id)
+                }
+
+                var profileMatches: Set<HIDMatch> = []
+                for match in profile.hidMatches {
+                    guard (0...0xFFFF).contains(match.vendorID),
+                          (0...0xFFFF).contains(match.productID),
+                          (0...0xFFFF).contains(match.usagePage),
+                          (0...0xFFFF).contains(match.usage),
+                          match.inputReportSize > 0,
+                          match.outputReportSize > 0 else {
+                        throw ConfigurationFailure.invalidHIDMatch(match)
+                    }
+                    guard profileMatches.insert(match).inserted else {
+                        throw ConfigurationFailure.duplicateHIDMatch(profile.id, match)
+                    }
+                    if profile.discoveryKind == .hidService {
+                        owners[match, default: []].append(profile)
+                    }
+                }
+            }
+
+            for (match, matchingProfiles) in owners where matchingProfiles.count > 1 {
+                throw ConfigurationFailure.conflictingHIDMatch(
+                    match, matchingProfiles.map(\.id))
+            }
         }
     }
 

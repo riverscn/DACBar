@@ -102,9 +102,13 @@ extension DACDeviceKit {
         public func validate(_ value: Int) throws {
             switch presentation {
             case .range(let minimum, let maximum, let step, _):
-                guard minimum...maximum ~= value,
-                      step > 0,
-                      (value - minimum).isMultiple(of: step)
+                guard minimum <= maximum, step > 0,
+                      value >= minimum, value <= maximum else {
+                    throw DriverFailure.invalidSetting(id, value)
+                }
+                let distance = value.subtractingReportingOverflow(minimum)
+                guard !distance.overflow,
+                      distance.partialValue.isMultiple(of: step)
                 else { throw DriverFailure.invalidSetting(id, value) }
             case .segmented(let options), .menu(let options):
                 guard options.contains(where: { $0.value == value }) else {
@@ -157,12 +161,69 @@ extension DACDeviceKit {
             confirmation: ConfirmationPolicy,
             readRetryDelays: [Duration],
             writeRetryLimit: Int
-        ) {
+        ) throws {
+            var settingIDs: Set<SettingID> = []
+            var groups: [String: SettingGroup] = [:]
+            for setting in settings {
+                guard settingIDs.insert(setting.id).inserted else {
+                    throw ConfigurationFailure.duplicateSettingID(setting.id)
+                }
+                let groupID = setting.group.id
+                guard !groupID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw ConfigurationFailure.emptySettingGroupID(setting.id)
+                }
+                if let existing = groups[groupID], existing != setting.group {
+                    throw ConfigurationFailure.conflictingSettingGroupID(groupID)
+                }
+                groups[groupID] = setting.group
+                switch setting.presentation {
+                case .range(let minimum, let maximum, let step, _):
+                    let span = maximum.subtractingReportingOverflow(minimum)
+                    guard minimum <= maximum, step > 0, !span.overflow else {
+                        throw ConfigurationFailure.invalidRange(
+                            setting.id, minimum: minimum, maximum: maximum, step: step)
+                    }
+                case .segmented(let options), .menu(let options):
+                    guard !options.isEmpty else {
+                        throw ConfigurationFailure.emptyOptions(setting.id)
+                    }
+                    var optionIDs: Set<Int> = []
+                    for option in options where !optionIDs.insert(option.id).inserted {
+                        throw ConfigurationFailure.duplicateOptionID(setting.id, option.id)
+                    }
+                case .toggle, .color, .readOnly:
+                    break
+                }
+            }
+            for (index, delay) in readRetryDelays.enumerated() where delay < .zero {
+                throw ConfigurationFailure.negativeReadRetryDelay(index)
+            }
+            guard writeRetryLimit >= 0 else {
+                throw ConfigurationFailure.negativeWriteRetryLimit(writeRetryLimit)
+            }
             self.settings = settings
             self.readback = readback
             self.confirmation = confirmation
             self.readRetryDelays = readRetryDelays
             self.writeRetryLimit = writeRetryLimit
+        }
+
+        /// Enforces the common `Driver.read()` contract at the host boundary.
+        /// Even partial/write-only transports must merge their state before
+        /// returning a logical snapshot to the App.
+        public func validate(_ snapshot: Snapshot) throws {
+            guard snapshot.valid else { throw ConfigurationFailure.invalidSnapshot }
+            for setting in settings {
+                if let value = snapshot.values[setting.id] {
+                    do {
+                        if setting.isWritable { try setting.validate(value) }
+                    } catch {
+                        throw ConfigurationFailure.invalidSnapshotValue(setting.id, value)
+                    }
+                } else if setting.isWritable || snapshot.textValues[setting.id] == nil {
+                    throw ConfigurationFailure.incompleteSnapshot(setting.id)
+                }
+            }
         }
     }
 
@@ -274,21 +335,21 @@ extension DACDeviceKit {
 
     /// One independently compiled family of supported devices. The App owns
     /// composition; each plug-in owns discovery enumeration and driver creation
-    /// for the profiles it publishes.
+    /// for the profiles it publishes. Discovery is deliberately synchronous and
+    /// main-actor-bound while every shipped backend is one bounded IOHID snapshot.
+    /// A backend that waits, polls, or streams must introduce an asynchronous
+    /// discovery abstraction rather than block this compatibility contract.
     @MainActor
     public protocol DevicePlugin {
         var profiles: [DeviceProfile] { get }
         func devices() throws -> [Device]
-        func makeDriver(
-            profile: DeviceProfile,
-            locationID: UInt32
-        ) throws -> any Driver
+        func makeDriver(for device: Device) throws -> any Driver
     }
 
 }
 
 public extension DACDeviceKit.DevicePlugin {
     func supports(_ profile: DACDeviceKit.DeviceProfile) -> Bool {
-        profiles.contains { $0.id == profile.id && $0.driverID == profile.driverID }
+        profiles.contains(profile)
     }
 }

@@ -12,15 +12,15 @@ enum SupportedDevices {
         ShanlingUA1II.Plugin(),
     ]
 
-    static let registry = DACDeviceKit.DeviceRegistry(
+    static let registry = try! DACDeviceKit.DeviceRegistry(
         profiles: plugins.flatMap(\.profiles))
 
     static var previewProfile: DACDeviceKit.DeviceProfile {
-        ShanlingUA1II.profile
+        plugins[0].profiles[0]
     }
 
     static var previewSettings: [DACDeviceKit.SettingDescriptor] {
-        ShanlingUA1II.UA1IIDriver.settings
+        ShanlingUA1II.Plugin.previewSettings
     }
 
     static func hidMatchingDictionaries() -> CFArray {
@@ -40,12 +40,13 @@ enum SupportedDevices {
 
     @MainActor
     static func makeDriver(
-        profile: DACDeviceKit.DeviceProfile,
-        locationID: UInt32
+        for device: DACDeviceKit.Device
     ) throws -> any DACDeviceKit.Driver {
-        guard let plugin = plugins.first(where: { $0.supports(profile) }) else {
-            throw DACDeviceKit.DriverFailure.unsupportedModel(profile.id)
+        guard let plugin = plugins.first(where: {
+            $0.profiles.contains { $0.id == device.profile.id }
+        }) else {
+            throw DACDeviceKit.DriverFailure.unsupportedModel(device.profile.id)
         }
-        return try plugin.makeDriver(profile: profile, locationID: locationID)
+        return try plugin.makeDriver(for: device)
     }
 }

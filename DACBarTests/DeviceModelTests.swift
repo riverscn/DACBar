@@ -107,12 +107,12 @@ private final class FakeConnection: DeviceDriver {
         descriptor: DACDeviceKit.DriverDescriptor? = nil
     ) {
         immediateRead = state
-        self.descriptor = descriptor ?? DACDeviceKit.DriverDescriptor(
+        self.descriptor = descriptor ?? (try! DACDeviceKit.DriverDescriptor(
             settings: TestDevice.settings,
             readback: .complete,
             confirmation: .acknowledgement,
             readRetryDelays: [.milliseconds(600), .seconds(1)],
-            writeRetryLimit: 1)
+            writeRetryLimit: 1))
     }
 
     func read() async throws -> DACDeviceKit.Snapshot {
@@ -480,7 +480,7 @@ struct DeviceModelTests {
             group: .audio,
             presentation: .range(
                 minimum: 0, maximum: 10, step: 1, format: .number))
-        let descriptor = DACDeviceKit.DriverDescriptor(
+        let descriptor = try DACDeviceKit.DriverDescriptor(
             settings: [volume],
             readback: .complete,
             confirmation: .acknowledgement,
@@ -503,6 +503,31 @@ struct DeviceModelTests {
         #expect(connection.submitted == [
             DACDeviceKit.Mutation(setting: .volume, value: 7)
         ])
+    }
+
+    @Test("An incomplete driver snapshot fails before the model becomes ready")
+    func incompleteSnapshotFailsClosed() async throws {
+        let attached = device(location: 0x0110_0000, registry: 1)
+        let watcher = FakeWatcher(devices: [attached])
+        let descriptor = try DACDeviceKit.DriverDescriptor(
+            settings: Array(TestDevice.settings.prefix(2)),
+            readback: .complete,
+            confirmation: .acknowledgement,
+            readRetryDelays: [],
+            writeRetryLimit: 0)
+        let connection = FakeConnection(
+            state: DACDeviceKit.Snapshot(valid: true, values: [.volume: 5]),
+            descriptor: descriptor)
+        let model = DeviceModel(watcher: watcher) { _ in connection }
+
+        try await waitUntil {
+            if case .failed = model.phase { return true }
+            return false
+        }
+        #expect(model.phase == .failed(
+            DACDeviceKit.ConfigurationFailure.incompleteSnapshot(.gain)
+                .localizedDescription))
+        #expect(!model.isReady)
     }
 
     @Test("Shortcut volume steps use the selected driver's mutation path")
@@ -533,7 +558,7 @@ struct DeviceModelTests {
             group: .audio,
             presentation: .range(
                 minimum: 0, maximum: 9, step: 2, format: .number))
-        let descriptor = DACDeviceKit.DriverDescriptor(
+        let descriptor = try DACDeviceKit.DriverDescriptor(
             settings: [volume],
             readback: .complete,
             confirmation: .acknowledgement,

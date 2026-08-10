@@ -24,8 +24,8 @@ struct DeviceArchitectureTests {
         #expect(profile.hidMatches.single?.productID == 0x3033)
     }
 
-    @Test("A shared USB signature is disambiguated by normalized product name")
-    func sharedSignatureUsesProductName() throws {
+    @Test("A shared USB signature fails composed registry validation")
+    func sharedSignatureFailsComposition() throws {
         let match = DACDeviceKit.HIDMatch(
             vendorID: 0x20B1,
             productID: 0x301F,
@@ -35,31 +35,13 @@ struct DeviceArchitectureTests {
             outputReportSize: 8)
         let first = profile(id: "h0", name: "Shanling H0", match: match)
         let second = profile(id: "h7", name: "Shanling H7", match: match)
-        let registry = DACDeviceKit.DeviceRegistry(profiles: [first, second])
-
-        let resolved = registry.profile(
-            vendorID: 0x20B1,
-            productID: 0x301F,
-            productName: "  USB   Shanling H7  ",
-            usagePage: 1,
-            usage: 0x80,
-            inputReportSize: 8,
-            outputReportSize: 8)
-        #expect(resolved?.id == second.id)
-
-        let unknown = registry.profile(
-            vendorID: 0x20B1,
-            productID: 0x301F,
-            productName: "Unknown",
-            usagePage: 1,
-            usage: 0x80,
-            inputReportSize: 8,
-            outputReportSize: 8)
-        #expect(unknown == nil)
+        #expect(throws: DACDeviceKit.ConfigurationFailure.self) {
+            _ = try DACDeviceKit.DeviceRegistry(profiles: [first, second])
+        }
     }
 
     @Test("A non-HID profile cannot leak into HID discovery")
-    func discoveryBackendsStaySeparated() {
+    func discoveryBackendsStaySeparated() throws {
         let match = DACDeviceKit.HIDMatch(
             vendorID: 0x20B1,
             productID: 0x3999,
@@ -76,7 +58,7 @@ struct DeviceArchitectureTests {
             transportKind: .vendorControl,
             driverID: ShanlingUA1II.driverID,
             verification: .experimental)
-        let registry = DACDeviceKit.DeviceRegistry(profiles: [profile])
+        let registry = try DACDeviceKit.DeviceRegistry(profiles: [profile])
 
         #expect(registry.hidMatches.isEmpty)
         #expect(registry.profile(
@@ -114,6 +96,86 @@ struct DeviceArchitectureTests {
             == DACDeviceKit.Mutation(setting: .screenOffset, value: 5))
     }
 
+    @Test("Opaque registry IDs never imply chronology during overlap")
+    func opaqueRegistryIdentity() throws {
+        let lowerOpaqueID = device(registryEntryID: 1)
+        let higherOpaqueID = device(registryEntryID: UInt64.max)
+
+        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
+            lowerOpaqueID, higherOpaqueID,
+        ]).isEmpty)
+        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
+            higherOpaqueID, lowerOpaqueID,
+        ]).isEmpty)
+        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
+            lowerOpaqueID,
+        ]) == [lowerOpaqueID])
+        #expect(!ShanlingUA1II.matchesOpeningIdentity(
+            expected: higherOpaqueID, actual: lowerOpaqueID))
+        #expect(ShanlingUA1II.matchesOpeningIdentity(
+            expected: higherOpaqueID, actual: higherOpaqueID))
+    }
+
+    @Test("The plug-in replaces caller-crafted metadata with its canonical profile")
+    @MainActor
+    func canonicalProfileEnforcement() throws {
+        let canonical = ShanlingUA1II.profile
+        let crafted = DACDeviceKit.DeviceProfile(
+            id: canonical.id,
+            displayName: "Caller-crafted profile",
+            productNames: ["Untrusted"],
+            hidMatches: canonical.hidMatches,
+            discoveryKind: canonical.discoveryKind,
+            transportKind: canonical.transportKind,
+            driverID: canonical.driverID,
+            verification: .experimental)
+        let supplied = DACDeviceKit.Device(
+            profile: crafted,
+            productID: ShanlingUA1II.productID,
+            locationID: 0x0110_0000,
+            registryEntryID: 99,
+            name: "Discovered name")
+
+        let resolved = try ShanlingUA1II.Plugin().canonicalDevice(for: supplied)
+        #expect(resolved.profile == canonical)
+        #expect(resolved.productID == supplied.productID)
+        #expect(resolved.locationID == supplied.locationID)
+        #expect(resolved.registryEntryID == supplied.registryEntryID)
+        #expect(resolved.name == supplied.name)
+
+        let missingGeneration = DACDeviceKit.Device(
+            profile: crafted,
+            productID: supplied.productID,
+            locationID: supplied.locationID,
+            registryEntryID: 0,
+            name: supplied.name)
+        #expect(throws: DACDeviceKit.DriverFailure.self) {
+            _ = try ShanlingUA1II.Plugin().canonicalDevice(for: missingGeneration)
+        }
+    }
+
+    @Test("Discovery remains a synchronous main-actor compatibility boundary")
+    @MainActor
+    func synchronousDiscoveryBoundary() {
+        let plugin: any DACDeviceKit.DevicePlugin = ShanlingUA1II.Plugin()
+        let enumerate: @MainActor () throws -> [DACDeviceKit.Device] = plugin.devices
+        let open: @MainActor (DACDeviceKit.Device) throws -> any DACDeviceKit.Driver =
+            plugin.makeDriver(for:)
+
+        #expect(plugin.profiles.count == 1)
+        _ = enumerate
+        _ = open
+    }
+
+    private func device(registryEntryID: UInt64) -> DACDeviceKit.Device {
+        DACDeviceKit.Device(
+            profile: ShanlingUA1II.profile,
+            productID: ShanlingUA1II.productID,
+            locationID: 0x0110_0000,
+            registryEntryID: registryEntryID,
+            name: "Shanling UA1 II")
+    }
+
     private func profile(
         id: String,
         name: String,
@@ -126,7 +188,7 @@ struct DeviceArchitectureTests {
             hidMatches: [match],
             discoveryKind: .hidService,
             transportKind: .interruptEndpoints,
-            driverID: ShanlingUA1II.driverID,
+            driverID: DACDeviceKit.DriverID(rawValue: id + ".driver"),
             verification: .experimental)
     }
 }

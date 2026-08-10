@@ -28,15 +28,15 @@ import DACDeviceKit
 /// See Documentation/ShanlingUA1II/ProtocolFindings.md.
 public enum ShanlingUA1II {
 
-    public typealias Device = DACDeviceKit.Device
-    public typealias DeviceProfile = DACDeviceKit.DeviceProfile
-    public typealias DeviceRegistry = DACDeviceKit.DeviceRegistry
-    public typealias ModelID = DACDeviceKit.ModelID
+    typealias Device = DACDeviceKit.Device
+    typealias DeviceProfile = DACDeviceKit.DeviceProfile
+    typealias DeviceRegistry = DACDeviceKit.DeviceRegistry
+    typealias ModelID = DACDeviceKit.ModelID
 
-    public static let modelID = ModelID(rawValue: "shanling.ua1-ii")
-    public static let driverID = DACDeviceKit.DriverID(
+    static let modelID = ModelID(rawValue: "shanling.ua1-ii")
+    static let driverID = DACDeviceKit.DriverID(
         rawValue: "shanling.ua1-ii.hid")
-    public static let profile = DeviceProfile(
+    static let profile = DeviceProfile(
         id: modelID,
         displayName: "Shanling UA1 II",
         productNames: ["Shanling UA1 II", "UA1 II", "UA1 2nd Gen"],
@@ -53,25 +53,25 @@ public enum ShanlingUA1II {
         transportKind: .hidReports,
         driverID: driverID,
         verification: .verified(hardware: "UA1 II", firmware: nil))
-    public static let registry = DeviceRegistry(profiles: [profile])
+    static let registry = try! DeviceRegistry(profiles: [profile])
 
-    public static let vendorID = profile.hidMatches[0].vendorID
-    public static let productID = profile.hidMatches[0].productID
+    static let vendorID = profile.hidMatches[0].vendorID
+    static let productID = profile.hidMatches[0].productID
     private static let logger = Logger(subsystem: "ShanlingUA1II", category: "transport")
 
     /// Screen offset is the one field whose wire value differs from the logical
     /// one.
-    public static let screenOffsetBias = 50
+    static let screenOffsetBias = 50
 
     /// UA1 II requires zero here when using the asynchronous IOKit API even
     /// though byte zero of the report buffer still carries report ID 0x01.
     /// Passing 1 completes successfully but the device never answers.
     static let outputReportID: CFIndex = 0
 
-    // MARK: - Public surface
+    // MARK: - Protocol surface
 
     /// Command bytes, all verified against real UA1 II hardware.
-    public enum Command: UInt8, Sendable, CaseIterable, Hashable {
+    enum Command: UInt8, Sendable, CaseIterable, Hashable {
         case volume        = 0x01
         case gain          = 0x02
         case filter        = 0x03
@@ -95,12 +95,12 @@ public enum ShanlingUA1II {
         }
     }
 
-    public struct Write: Sendable, Equatable, Hashable {
-        public let command: Command
+    struct Write: Sendable, Equatable, Hashable {
+        let command: Command
         /// Already in wire units.
-        public let value: UInt8
+        let value: UInt8
 
-        public init(_ command: Command, _ value: UInt8) throws {
+        init(_ command: Command, _ value: UInt8) throws {
             guard command.accepts(value) else {
                 throw Failure.invalidValue(command, value)
             }
@@ -109,23 +109,23 @@ public enum ShanlingUA1II {
         }
     }
 
-    public struct State: Equatable, Sendable {
-        public var valid = false
-        public var volume = 0          // 0–99
-        public var gain = 0            // 0 low, 1 high
-        public var filter = 0          // 0–4
-        public var balance = 0         // −12…12, signed on the wire
-        public var brightness = 0      // 0–10
-        public var screenTimeout = 0   // seconds, 0 = never
-        public var orientation = 0     // 0–3
-        public var screenOffset = 0    // 0–10, stored as value + 50
-        public var firmware = ""
+    struct State: Equatable, Sendable {
+        var valid = false
+        var volume = 0          // 0–99
+        var gain = 0            // 0 low, 1 high
+        var filter = 0          // 0–4
+        var balance = 0         // −12…12, signed on the wire
+        var brightness = 0      // 0–10
+        var screenTimeout = 0   // seconds, 0 = never
+        var orientation = 0     // 0–3
+        var screenOffset = 0    // 0–10, stored as value + 50
+        var firmware = ""
 
-        public init() {}
+        init() {}
 
         /// Applies one validated `0x10` acknowledgement — how a button press on
         /// the device reaches us.
-        public mutating func apply(_ write: Write) {
+        mutating func apply(_ write: Write) {
             let value = write.value
             switch write.command {
             case .volume:        volume = Int(value)
@@ -140,7 +140,7 @@ public enum ShanlingUA1II {
         }
     }
 
-    public enum Failure: Error, LocalizedError {
+    enum Failure: Error, LocalizedError {
         case managerFailed(IOReturn)
         case deviceNotFound
         case sendFailed(IOReturn)
@@ -149,7 +149,7 @@ public enum ShanlingUA1II {
         case invalidFrame
         case invalidValue(Command, UInt8)
 
-        public var errorDescription: String? {
+        var errorDescription: String? {
             switch self {
             case .managerFailed(let r):
                 return DeviceL10n.format(
@@ -181,7 +181,7 @@ public enum ShanlingUA1II {
     // MARK: - Enumeration
 
     /// Every attached dongle.
-    public static func devices() throws -> [Device] {
+    static func devices() throws -> [Device] {
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         setDeviceMatching(manager, profiles: registry.profiles)
         let result = IOHIDManagerOpen(manager, 0)
@@ -189,32 +189,60 @@ public enum ShanlingUA1II {
         defer { IOHIDManagerClose(manager, 0) }
 
         let all = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
-        let candidates = all.compactMap { device -> Device? in
-            guard let profile = profile(for: device) else { return nil }
-            guard let location = property(device, kIOHIDLocationIDKey) as? NSNumber
-            else { return nil }
-            let locationID = UInt32(truncatingIfNeeded: location.intValue)
-            let productID = numberProperty(device, kIOHIDProductIDKey) ?? 0
-            let name = property(device, kIOHIDProductKey) as? String ?? profile.displayName
-            let registryEntryID = registryEntryID(of: device)
-            return Device(
-                profile: profile,
-                productID: productID,
-                locationID: locationID,
-                registryEntryID: registryEntryID,
-                name: name)
+        let candidates = all.compactMap { discoveredDevice(for: $0) }
+        return discardingAmbiguousRegistryEntries(candidates)
+    }
+
+    /// IOHID may briefly expose both the retiring and replacement service for
+    /// one physical port. Registry entry IDs are opaque, so an overlapping
+    /// snapshot cannot identify either service as newer. Omit that logical
+    /// device until a later settled snapshot contains exactly one service.
+    static func discardingAmbiguousRegistryEntries(
+        _ candidates: [Device]
+    ) -> [Device] {
+        Dictionary(grouping: candidates, by: \.id).values.compactMap { matches in
+            matches.count == 1 ? matches[0] : nil
         }.sorted {
-            ($0.locationID, $0.registryEntryID) < ($1.locationID, $1.registryEntryID)
+            ($0.locationID, $0.profile.id.rawValue)
+                < ($1.locationID, $1.profile.id.rawValue)
         }
-        var seen: Set<Device.ID> = []
-        return candidates.filter { seen.insert($0.id).inserted }
+    }
+
+    static func matchesOpeningIdentity(expected: Device, actual: Device) -> Bool {
+        expected.profile == actual.profile
+            && expected.productID == actual.productID
+            && expected.locationID == actual.locationID
+            && expected.registryEntryID == actual.registryEntryID
+    }
+
+    private static func discoveredDevice(
+        for device: IOHIDDevice,
+        registry: DeviceRegistry = registry
+    ) -> Device? {
+        guard let profile = profile(for: device, registry: registry) else { return nil }
+        guard let location = property(device, kIOHIDLocationIDKey) as? NSNumber
+        else { return nil }
+        let locationID = UInt32(truncatingIfNeeded: location.intValue)
+        let productID = numberProperty(device, kIOHIDProductIDKey) ?? 0
+        let name = property(device, kIOHIDProductKey) as? String ?? profile.displayName
+        let registryEntryID = registryEntryID(of: device)
+        guard registryEntryID != 0 else { return nil }
+        return Device(
+            profile: profile,
+            productID: productID,
+            locationID: locationID,
+            registryEntryID: registryEntryID,
+            name: name)
     }
 
     private static func setDeviceMatching(
         _ manager: IOHIDManager,
         profiles: [DeviceProfile]
     ) {
-        let dictionaries = DeviceRegistry(profiles: profiles).hidMatches.map { match in
+        let dictionaries = profiles
+            .filter { $0.discoveryKind == .hidService }
+            .flatMap(\.hidMatches)
+            .map { match in
             [
                 kIOHIDVendorIDKey: match.vendorID,
                 kIOHIDProductIDKey: match.productID,
@@ -324,12 +352,12 @@ public enum ShanlingUA1II {
     /// thread created the connection, and everything here waits by suspending
     /// rather than by blocking that thread.
     @MainActor
-    public final class Connection {
+    final class Connection {
 
-        public var onChange: ((Write) -> Void)?
-        public var onConfirmed: ((Write) -> Void)?
-        public var onDropped: ((Write) -> Void)?
-        public var onRemoved: (() -> Void)?
+        var onChange: ((Write) -> Void)?
+        var onConfirmed: ((Write) -> Void)?
+        var onDropped: ((Write) -> Void)?
+        var onRemoved: (() -> Void)?
 #if DEBUG
         /// Test synchronization point immediately after IOKit accepts an
         /// asynchronous report request. Not part of the public API surface.
@@ -381,13 +409,9 @@ public enum ShanlingUA1II {
             AcknowledgementSession.SubmissionID: Task<Void, Never>
         ] = [:]
 
-        public init(
-            locationID: UInt32? = nil,
-            profile: DeviceProfile = ShanlingUA1II.profile
-        ) throws {
-            guard profile.driverID == driverID,
-                  profile.discoveryKind == .hidService,
-                  profile.transportKind == .hidReports else {
+        init(device expected: Device) throws {
+            let profile = expected.profile
+            guard profile == ShanlingUA1II.profile else {
                 throw Failure.deviceNotFound
             }
             let manager = IOHIDManagerCreate(kCFAllocatorDefault,
@@ -399,18 +423,10 @@ public enum ShanlingUA1II {
             }
 
             let all = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
-            let matches = all.filter { candidate in
-                guard ShanlingUA1II.profile(
-                    for: candidate,
-                    registry: DeviceRegistry(profiles: [profile]))?.id == profile.id
-                else { return false }
-                guard let locationID else { return true }
-                guard let number = property(candidate, kIOHIDLocationIDKey) as? NSNumber
-                else { return false }
-                return UInt32(truncatingIfNeeded: number.intValue) == locationID
-            }
-            let match = matches.min {
-                registryEntryID(of: $0) < registryEntryID(of: $1)
+            let match = all.first { candidate in
+                guard let actual = discoveredDevice(
+                    for: candidate, registry: ShanlingUA1II.registry) else { return false }
+                return matchesOpeningIdentity(expected: expected, actual: actual)
             }
             guard let match else {
                 IOHIDManagerClose(manager, 0)
@@ -456,7 +472,7 @@ public enum ShanlingUA1II {
 
         /// Explicit and idempotent because HID callbacks hold an unretained
         /// context and their lifetime must end before the input buffer is freed.
-        public func close() {
+        func close() {
             guard !closed else { return }
             closed = true
 
@@ -628,7 +644,7 @@ public enum ShanlingUA1II {
 
         /// Submits one setting write. Acknowledgement remains asynchronous so a
         /// missing intermediate slider value never stalls later values.
-        public func submit(_ write: Write) async throws {
+        func submit(_ write: Write) async throws {
             try await acquireTransaction()
             defer { releaseTransaction() }
             try Task.checkCancellation()
@@ -754,7 +770,7 @@ public enum ShanlingUA1II {
         // MARK: Reading
 
         /// Queries all four state pages as one indivisible transaction.
-        public func read() async throws -> State {
+        func read() async throws -> State {
             try await acquireTransaction()
             defer { releaseTransaction() }
             try Task.checkCancellation()
