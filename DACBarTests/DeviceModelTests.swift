@@ -585,7 +585,11 @@ struct DeviceModelTests {
         let connection = FakeConnection(
             state: DACDeviceKit.Snapshot(valid: true, values: [.volume: 5]),
             descriptor: descriptor)
-        let model = DeviceModel(watcher: watcher) { _ in connection }
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
+        let model = DeviceModel(
+            selectionStore: selection.store, watcher: watcher
+        ) { _ in connection }
 
         try await waitUntil {
             if case .failed = model.phase { return true }
@@ -688,6 +692,43 @@ struct DeviceModelTests {
         #expect(defaults.object(forKey: DeviceSelectionStore.legacySelectionKey) == nil)
     }
 
+    @Test("An unmatched legacy selection survives a temporary fallback")
+    func unmatchedLegacySelectionSurvivesFallback() async throws {
+        let fallback = device(location: 0x0110_0000, registry: 1)
+        let remembered = device(location: 0x0210_0000, registry: 2)
+        let suiteName = "DACBarTests.SelectionFallback.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(
+            Int(remembered.locationID),
+            forKey: DeviceSelectionStore.legacySelectionKey)
+        let watcher = FakeWatcher(devices: [fallback])
+        let fallbackConnection = FakeConnection(state: state(volume: 10))
+        let rememberedConnection = FakeConnection(state: state(volume: 20))
+        let model = DeviceModel(
+            selectionStore: DeviceSelectionStore(defaults: defaults),
+            watcher: watcher
+        ) { device in
+            device == fallback ? fallbackConnection : rememberedConnection
+        }
+
+        try await waitUntil { model.phase == .ready }
+        #expect(model.selected == fallback)
+        #expect(defaults.object(
+            forKey: DeviceSelectionStore.legacySelectionKey) != nil)
+
+        watcher.publish([remembered])
+        try await waitUntil {
+            model.phase == .ready && model.selected == remembered
+        }
+
+        #expect(defaults.string(forKey: DeviceSelectionStore.selectionKey)
+            == remembered.persistedSelection)
+        #expect(defaults.object(
+            forKey: DeviceSelectionStore.legacySelectionKey) == nil)
+    }
+
     @Test("Selection stores do not share preference domains")
     func selectionStoresAreIsolated() {
         let attached = device(location: 0x0110_0000, registry: 1)
@@ -714,7 +755,7 @@ struct DeviceModelTests {
     func invalidFixtureCannotBecomeReady() async throws {
         let attached = device(location: 0x0110_0000, registry: 1)
         let watcher = FakeWatcher(devices: [attached])
-        let descriptor = DACDeviceKit.DriverDescriptor(
+        let descriptor = try DACDeviceKit.DriverDescriptor(
             settings: TestDevice.settings,
             readback: .complete,
             confirmation: .acknowledgement,

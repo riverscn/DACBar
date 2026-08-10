@@ -31,11 +31,11 @@ struct DeviceSelectionStore {
         else { return nil }
 
         save(device)
+        defaults.removeObject(forKey: Self.legacySelectionKey)
         return device
     }
 
     func save(_ device: AttachedDevice) {
         defaults.set(device.persistedSelection, forKey: Self.selectionKey)
-        defaults.removeObject(forKey: Self.legacySelectionKey)
     }
 }
