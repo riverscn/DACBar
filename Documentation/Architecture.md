@@ -10,9 +10,17 @@ DACBar 是厂商无关的产品；当前发布版本仍只启用经过真机验�
 ```text
 DACBar.xcodeproj
 ├── DACBar App target
-│   └── App/：@main、SwiftUI、DeviceModel、composition root、Sparkle、资源
+│   └── DACBar/
+│       ├── Application/：@main、App identity、composition root
+│       ├── Devices/：发现、选择、会话与 DeviceModel
+│       ├── DeviceControls/：面板根视图与能力控件
+│       ├── Settings/：设置界面、登录项与 Sparkle
+│       ├── HotKeys/：快捷键模型、录制与全局注册
+│       ├── SharedUI/：本地化与共享样式
+│       ├── Configuration/：Info.plist、entitlements 与 xcconfig
+│       └── Resources/：String Catalog、图标与许可证
 ├── DACBarTests target
-│   └── DACBarTests/：App 与业务层测试
+│   └── DACBarTests/：按 Devices、DeviceControls、Settings、HotKeys 镜像分组
 └── local package dependency
     └── Packages/DACDevices/
         ├── DACDeviceKit：厂商无关 contracts
@@ -34,7 +42,7 @@ DACBar.xcodeproj
 当前唯一实现并启用的组合是 `hidService + hidReports + shanling.ua1-ii.hid`。代码中的
 `usbRegistry`、`vendorControl`、`interruptEndpoints` 和 `hidFeatureInterrupt` 只是为
 讨论未来型号保留的类型词汇，并没有对应的运行时 backend。它们不能用于判断某个型号
-已经受支持，唯一依据是 `App/SupportedDevices.swift` 的组合清单。
+已经受支持，唯一依据是 `DACBar/Application/SupportedDevices.swift` 的组合清单。
 
 在取得第二个型号并完成 macOS 真机调查前，不提前实现通用 USB discovery、bulk/vendor
 transport、轮询器或状态缓存。这样可以避免把 Linux/libusb 的接口占用假设带进 macOS，

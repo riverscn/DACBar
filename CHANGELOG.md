@@ -21,7 +21,7 @@
   验证；签名 secrets 由受保护的 `release-signing` environment 审批后才可访问。
 - 发布 checksum 只记录 DMG basename，并在 ARM、Intel 和最终发布 job 使用前重新验证；
   匹配的 dSYM 经 AES-256/PBKDF2 加密后作为 Actions artifact 保留 90 天。
-- 用户版本改由 `App/Configuration/Version.xcconfig` 单点维护；Xcode、发布脚本、tag、
+- 用户版本改由 `DACBar/Configuration/Version.xcconfig` 单点维护；Xcode、发布脚本、tag、
   DMG 与 Sparkle appcast 不再复制或解析独立 `VERSION` 文件。
 - Dependabot 每周监控 Swift Package 与 GitHub Actions 依赖；发布文档加入 N-1 → N
   真正签名、公证更新的端到端验收与 Ed25519 密钥轮换说明。
