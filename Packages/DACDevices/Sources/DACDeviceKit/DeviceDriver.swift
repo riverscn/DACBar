@@ -102,10 +102,12 @@ extension DACDeviceKit {
         public func validate(_ value: Int) throws {
             switch presentation {
             case .range(let minimum, let maximum, let step, _):
+                guard minimum <= maximum, step > 0,
+                      value >= minimum, value <= maximum else {
+                    throw DriverFailure.invalidSetting(id, value)
+                }
                 let distance = value.subtractingReportingOverflow(minimum)
-                guard minimum...maximum ~= value,
-                      step > 0,
-                      !distance.overflow,
+                guard !distance.overflow,
                       distance.partialValue.isMultiple(of: step)
                 else { throw DriverFailure.invalidSetting(id, value) }
             case .segmented(let options), .menu(let options):
@@ -161,10 +163,19 @@ extension DACDeviceKit {
             writeRetryLimit: Int
         ) throws {
             var settingIDs: Set<SettingID> = []
+            var groups: [String: SettingGroup] = [:]
             for setting in settings {
                 guard settingIDs.insert(setting.id).inserted else {
                     throw ConfigurationFailure.duplicateSettingID(setting.id)
                 }
+                let groupID = setting.group.id
+                guard !groupID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    throw ConfigurationFailure.emptySettingGroupID(setting.id)
+                }
+                if let existing = groups[groupID], existing != setting.group {
+                    throw ConfigurationFailure.conflictingSettingGroupID(groupID)
+                }
+                groups[groupID] = setting.group
                 switch setting.presentation {
                 case .range(let minimum, let maximum, let step, _):
                     let span = maximum.subtractingReportingOverflow(minimum)

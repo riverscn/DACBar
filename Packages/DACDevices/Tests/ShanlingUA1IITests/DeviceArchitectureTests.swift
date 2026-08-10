@@ -24,8 +24,8 @@ struct DeviceArchitectureTests {
         #expect(profile.hidMatches.single?.productID == 0x3033)
     }
 
-    @Test("A shared USB signature is disambiguated by normalized product name")
-    func sharedSignatureUsesProductName() throws {
+    @Test("A shared USB signature fails composed registry validation")
+    func sharedSignatureFailsComposition() throws {
         let match = DACDeviceKit.HIDMatch(
             vendorID: 0x20B1,
             productID: 0x301F,
@@ -35,27 +35,9 @@ struct DeviceArchitectureTests {
             outputReportSize: 8)
         let first = profile(id: "h0", name: "Shanling H0", match: match)
         let second = profile(id: "h7", name: "Shanling H7", match: match)
-        let registry = try DACDeviceKit.DeviceRegistry(profiles: [first, second])
-
-        let resolved = registry.profile(
-            vendorID: 0x20B1,
-            productID: 0x301F,
-            productName: "  USB   Shanling H7  ",
-            usagePage: 1,
-            usage: 0x80,
-            inputReportSize: 8,
-            outputReportSize: 8)
-        #expect(resolved?.id == second.id)
-
-        let unknown = registry.profile(
-            vendorID: 0x20B1,
-            productID: 0x301F,
-            productName: "Unknown",
-            usagePage: 1,
-            usage: 0x80,
-            inputReportSize: 8,
-            outputReportSize: 8)
-        #expect(unknown == nil)
+        #expect(throws: DACDeviceKit.ConfigurationFailure.self) {
+            _ = try DACDeviceKit.DeviceRegistry(profiles: [first, second])
+        }
     }
 
     @Test("A non-HID profile cannot leak into HID discovery")
@@ -114,15 +96,24 @@ struct DeviceArchitectureTests {
             == DACDeviceKit.Mutation(setting: .screenOffset, value: 5))
     }
 
-    @Test("Overlapping registry generations publish and open only the selected service")
-    func registryGenerationIdentity() throws {
-        let stale = device(registryEntryID: 41)
-        let current = device(registryEntryID: 42)
-        let coalesced = ShanlingUA1II.coalescingRegistryGenerations([stale, current])
+    @Test("Opaque registry IDs never imply chronology during overlap")
+    func opaqueRegistryIdentity() throws {
+        let lowerOpaqueID = device(registryEntryID: 1)
+        let higherOpaqueID = device(registryEntryID: UInt64.max)
 
-        #expect(coalesced == [current])
-        #expect(!ShanlingUA1II.matchesOpeningIdentity(expected: current, actual: stale))
-        #expect(ShanlingUA1II.matchesOpeningIdentity(expected: current, actual: current))
+        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
+            lowerOpaqueID, higherOpaqueID,
+        ]).isEmpty)
+        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
+            higherOpaqueID, lowerOpaqueID,
+        ]).isEmpty)
+        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
+            lowerOpaqueID,
+        ]) == [lowerOpaqueID])
+        #expect(!ShanlingUA1II.matchesOpeningIdentity(
+            expected: higherOpaqueID, actual: lowerOpaqueID))
+        #expect(ShanlingUA1II.matchesOpeningIdentity(
+            expected: higherOpaqueID, actual: higherOpaqueID))
     }
 
     @Test("The plug-in replaces caller-crafted metadata with its canonical profile")

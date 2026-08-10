@@ -190,22 +190,22 @@ public enum ShanlingUA1II {
 
         let all = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
         let candidates = all.compactMap { discoveredDevice(for: $0) }
-        return coalescingRegistryGenerations(candidates)
+        return discardingAmbiguousRegistryEntries(candidates)
     }
 
     /// IOHID may briefly expose both the retiring and replacement service for
-    /// one physical port. Publish only the newest registry generation so the
-    /// host never opens the stale service selected by an overlapping snapshot.
-    static func coalescingRegistryGenerations(_ candidates: [Device]) -> [Device] {
-        let sorted = candidates.sorted {
-            if $0.id != $1.id {
-                return ($0.locationID, $0.profile.id.rawValue)
-                    < ($1.locationID, $1.profile.id.rawValue)
-            }
-            return $0.registryEntryID > $1.registryEntryID
+    /// one physical port. Registry entry IDs are opaque, so an overlapping
+    /// snapshot cannot identify either service as newer. Omit that logical
+    /// device until a later settled snapshot contains exactly one service.
+    static func discardingAmbiguousRegistryEntries(
+        _ candidates: [Device]
+    ) -> [Device] {
+        Dictionary(grouping: candidates, by: \.id).values.compactMap { matches in
+            matches.count == 1 ? matches[0] : nil
+        }.sorted {
+            ($0.locationID, $0.profile.id.rawValue)
+                < ($1.locationID, $1.profile.id.rawValue)
         }
-        var seen: Set<Device.ID> = []
-        return sorted.filter { seen.insert($0.id).inserted }
     }
 
     static func matchesOpeningIdentity(expected: Device, actual: Device) -> Bool {

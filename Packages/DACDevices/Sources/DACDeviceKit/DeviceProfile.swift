@@ -143,19 +143,10 @@ extension DACDeviceKit {
                         && match.outputReportSize == outputReportSize
                 }
             }
-            guard !candidates.isEmpty else { return nil }
-
-            // A unique USB/HID signature is authoritative even if a firmware
-            // revision changes or localizes its product string. Shared IDs must
-            // be disambiguated by an exact normalized model name.
-            if candidates.count == 1 { return candidates[0] }
-            let normalized = Self.normalize(productName)
-            return candidates.first { profile in
-                profile.productNames.contains {
-                    Self.normalize($0) == normalized
-                        || normalized.hasSuffix(" " + Self.normalize($0))
-                }
-            }
+            // Composition rejects cross-profile shared signatures because each
+            // plug-in currently enumerates independently. Product names remain
+            // descriptive aliases, not a cross-plug-in ownership mechanism.
+            return candidates.count == 1 ? candidates[0] : nil
         }
 
         public func profile(id: ModelID) -> DeviceProfile? {
@@ -203,29 +194,9 @@ extension DACDeviceKit {
             }
 
             for (match, matchingProfiles) in owners where matchingProfiles.count > 1 {
-                var productNames: Set<String> = []
-                for profile in matchingProfiles {
-                    let normalized = Set(profile.productNames.map(normalize).filter { !$0.isEmpty })
-                    guard !normalized.isEmpty,
-                          productNames.allSatisfy({ existing in
-                              normalized.allSatisfy { candidate in
-                                  existing != candidate
-                                      && !existing.hasSuffix(" " + candidate)
-                                      && !candidate.hasSuffix(" " + existing)
-                              }
-                          }) else {
-                        throw ConfigurationFailure.conflictingHIDMatch(
-                            match, matchingProfiles.map(\.id))
-                    }
-                    productNames.formUnion(normalized)
-                }
+                throw ConfigurationFailure.conflictingHIDMatch(
+                    match, matchingProfiles.map(\.id))
             }
-        }
-
-        private static func normalize(_ value: String) -> String {
-            value.split(whereSeparator: { $0.isWhitespace })
-                .joined(separator: " ")
-                .lowercased()
         }
     }
 

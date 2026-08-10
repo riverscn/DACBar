@@ -14,6 +14,8 @@ extension DACDeviceKit {
         case duplicateHIDMatch(ModelID, HIDMatch)
         case conflictingHIDMatch(HIDMatch, [ModelID])
         case duplicateSettingID(SettingID)
+        case emptySettingGroupID(SettingID)
+        case conflictingSettingGroupID(String)
         case duplicateOptionID(SettingID, Int)
         case emptyOptions(SettingID)
         case invalidRange(SettingID, minimum: Int, maximum: Int, step: Int)
@@ -40,10 +42,14 @@ extension DACDeviceKit {
             case .duplicateHIDMatch(let model, _):
                 return "Device model \(model.rawValue) repeats the same HID signature."
             case .conflictingHIDMatch(_, let models):
-                return "A HID signature cannot be disambiguated between: "
+                return "A HID signature is owned by more than one model: "
                     + models.map(\.rawValue).joined(separator: ", ") + "."
             case .duplicateSettingID(let id):
                 return "Setting ID \(id.rawValue) is declared more than once."
+            case .emptySettingGroupID(let setting):
+                return "Setting \(setting.rawValue) has an empty group ID."
+            case .conflictingSettingGroupID(let id):
+                return "Setting group ID \(id) is associated with conflicting metadata."
             case .duplicateOptionID(let setting, let value):
                 return "Setting \(setting.rawValue) repeats option value \(value)."
             case .emptyOptions(let setting):

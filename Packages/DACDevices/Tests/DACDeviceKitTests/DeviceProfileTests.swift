@@ -3,8 +3,8 @@ import Testing
 
 @Suite("Vendor-neutral device core")
 struct DeviceProfileTests {
-    @Test("Profiles sharing a HID signature are resolved by normalized product name")
-    func sharedSignatureUsesProductName() throws {
+    @Test("Profiles cannot share a HID signature across plug-in ownership")
+    func sharedSignatureFailsComposition() throws {
         let match = DACDeviceKit.HIDMatch(
             vendorID: 1,
             productID: 2,
@@ -14,17 +14,9 @@ struct DeviceProfileTests {
             outputReportSize: 41)
         let first = profile(id: "vendor.one", name: "Vendor One", match: match)
         let second = profile(id: "vendor.two", name: "Vendor Two", match: match)
-        let registry = try DACDeviceKit.DeviceRegistry(profiles: [first, second])
-
-        let resolved = registry.profile(
-            vendorID: 1,
-            productID: 2,
-            productName: "  USB   Vendor Two  ",
-            usagePage: 1,
-            usage: 0x80,
-            inputReportSize: 9,
-            outputReportSize: 41)
-        #expect(resolved?.id == second.id)
+        #expect(throws: DACDeviceKit.ConfigurationFailure.self) {
+            _ = try DACDeviceKit.DeviceRegistry(profiles: [first, second])
+        }
     }
 
     @Test("A profile from another discovery backend cannot leak into HID matching")
@@ -159,6 +151,43 @@ struct DeviceProfileTests {
         #expect(throws: DACDeviceKit.ConfigurationFailure.self) {
             _ = try driverDescriptor(settings: [volume], writeRetryLimit: -1)
         }
+
+        let emptyGroup = DACDeviceKit.SettingGroup(id: "  ", title: "Empty")
+        #expect(throws: DACDeviceKit.ConfigurationFailure.self) {
+            _ = try driverDescriptor(settings: [descriptor(
+                id: .volume,
+                presentation: .toggle,
+                group: emptyGroup)])
+        }
+
+        let firstGroup = DACDeviceKit.SettingGroup(
+            id: "shared", title: "First", isCollapsible: false)
+        let conflictingGroup = DACDeviceKit.SettingGroup(
+            id: "shared", title: "Second", isCollapsible: true)
+        #expect(throws: DACDeviceKit.ConfigurationFailure.self) {
+            _ = try driverDescriptor(settings: [
+                descriptor(id: .volume, presentation: .toggle, group: firstGroup),
+                descriptor(id: .gain, presentation: .toggle, group: conflictingGroup),
+            ])
+        }
+        #expect(throws: Never.self) {
+            _ = try driverDescriptor(settings: [
+                descriptor(id: .volume, presentation: .toggle, group: firstGroup),
+                descriptor(id: .gain, presentation: .toggle, group: firstGroup),
+            ])
+        }
+    }
+
+    @Test("Direct range validation throws for reversed configuration")
+    func reversedRangeValidationDoesNotTrap() {
+        let reversed = descriptor(
+            id: .volume,
+            presentation: .range(
+                minimum: 10, maximum: 0, step: 1, format: .number))
+
+        #expect(throws: DACDeviceKit.DriverFailure.self) {
+            try reversed.validate(5)
+        }
     }
 
     @Test("Complete logical snapshots contain every declared setting")
@@ -187,13 +216,14 @@ struct DeviceProfileTests {
 
     private func descriptor(
         id: DACDeviceKit.SettingID,
-        presentation: DACDeviceKit.SettingPresentation
+        presentation: DACDeviceKit.SettingPresentation,
+        group: DACDeviceKit.SettingGroup = .audio
     ) -> DACDeviceKit.SettingDescriptor {
         DACDeviceKit.SettingDescriptor(
             id: id,
             title: id.rawValue,
             systemImage: "slider.horizontal.3",
-            group: .audio,
+            group: group,
             presentation: presentation)
     }
 

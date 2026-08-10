@@ -47,7 +47,7 @@ SupportedDevices composition root
     ↓ registered DeviceProfile + Driver factory
 DeviceRegistry
     ↓ USB/HID identity
-DeviceWatcher → AttachedDevice(profile, location, registry generation)
+DeviceWatcher → AttachedDevice(profile, location, registry entry identity)
                                   ↓ complete Device identity
                        DevicePlugin.makeDriver(for:)
                                   ↓
@@ -69,16 +69,20 @@ USB/HID 匹配条件、发现方式、传输类型和验证状态。通用核心
 HID watcher 的 matching dictionaries 由注册表生成，并与初始枚举使用同一套条件。
 `AttachedDevice` 携带完整 Profile；选择持久化使用 `profile + locationID`，不会把同一
 端口上的不同型号误认为同一个设备。`registryEntryID` 继续用于识别 USB reset 后的
-新一代 service。短暂同时出现旧、新 service 时，枚举只发布较新的 registry generation；
-Driver factory 仍收到发现阶段的完整 `Device`，并在打开 IOHID service 时同时核对 canonical
-Profile、productID、locationID 和 `registryEntryID`。因此旧快照不能只凭相同端口打开新一代
-service，调用方临时构造的同 ID Profile 也不会进入 Driver。
+不同 service。IOKit 只保证 registry entry ID 在本次启动期间唯一，它不是可排序的 generation
+counter；短暂同时出现同一逻辑设备的两个 service 时，枚举无法判断新旧，因此 fail closed，
+暂不发布该设备，等后续 settled snapshot 只剩一个 service。Driver factory 仍收到发现阶段的
+完整 `Device`，并在打开 IOHID service 时同时核对 canonical Profile、productID、locationID
+和 `registryEntryID`。因此旧快照不能只凭相同端口打开另一个 service，调用方临时构造的同 ID
+Profile 也不会进入 Driver。
 
 `DeviceRegistry` 在组合时拒绝重复的 `ModelID` / `DriverID`、同一 Profile 内重复的 HID
-signature，以及无法由产品名唯一消歧的跨 Profile signature。共享 VID/PID/HID 描述符仍可
-用于真实存在的不同型号，但它们的规范化产品名必须不重叠。`DriverDescriptor` 同样在 plug-in
-构造时验证 `SettingID`、option ID、range/step 和 retry policy；`DeviceModel` 接收 read
-结果时再验证完整 Snapshot，避免 SwiftUI identity collision、无效 range 和缺字段状态延迟到 UI。
+signature，以及任何跨 Profile 共享的 signature。当前每个 plug-in 独立枚举设备，组合根只合并
+结果，因此即使产品名不同，也不能安全地用它做跨 plug-in ownership 消歧；在 discovery resolution
+集中到组合根之前，共享 VID/PID/HID 描述符是不支持的配置。`productNames` 仍可记录同一 canonical
+Profile 的固件命名别名。`DriverDescriptor` 同样在 plug-in 构造时验证 `SettingID`、option ID、
+SettingGroup identity、range/step 和 retry policy；`DeviceModel` 接收 read 结果时再验证完整
+Snapshot，避免 SwiftUI identity collision、无效 range 和缺字段状态延迟到 UI。
 
 Shanling target 的宿主 API 只保留 `ShanlingUA1II.Plugin` 及预览所需的 setting metadata；
 Connection、wire codec、命令和 concrete Driver 都是模块内部实现。Package 内的协议与真机
