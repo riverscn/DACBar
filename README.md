@@ -51,6 +51,21 @@ debug 和 release 都生成同时支持 Apple Silicon 与 Intel Mac 的 Universa
 
 调试构建可用 `./build.sh debug`。
 
+## 设置
+
+面板底部的齿轮会打开原生设置窗口。通用页管理登录时启动、Sparkle 自动检查/下载和
+手动检查更新；快捷键页可以启用并录制硬件音量增减快捷键。快捷键默认关闭，默认组合为
+`⌃⌘↑` 和 `⌃⌘↓`，至少需要两个修饰键，且必须包含 Command 或 Control。
+
+全局快捷键始终控制 **DACBar 当前选中的 DAC**，不以 macOS 默认输出设备作为判断条件。
+因此播放器以独占模式使用该 DAC、而系统默认输出仍是另一台设备时，快捷键仍指向正确的
+控制 session；所选设备断开或尚未就绪时则不执行写入。实现使用系统 hot-key 注册 API，
+不监听全部键盘输入，也不申请 Accessibility 或 Input Monitoring 权限。
+
+当前没有实现系统媒体键拦截或“系统数字音量保持 100%”。这两项与 DAC 硬件音量快捷键是
+不同能力；后续若实现系统音量保护，不能以“DAC 等于当前默认输出”作为独占播放场景的
+必要条件。
+
 ## 架构
 
 当前发布版只启用经过真机验证的 UA1 II，但设备识别和 App 状态没有写死具体型号：
@@ -367,12 +382,11 @@ framework 添加 `disable-library-validation` 调试权限。
 正式构建会在签名前移除非沙箱路径未启用的 Sparkle `Installer.xpc`、`Downloader.xpc`
 及其 symlink，减少休眠代码和签名节点；`Updater.app` 与 `Autoupdate` 仍负责正常更新。
 
-后续计划是不再拦截系统媒体键，而提供两个可选能力：仅当受控 DAC 是默认输出时，使用
-Core Audio 事件监听把系统数字音量保持为 100%；使用用户自定义的普通全局快捷键调节
-DAC 硬件音量。这样可以避免键盘全局监控权限，并为 App Sandbox 留出可行路径。沙箱迁移
-仍须验证 USB entitlement 下的完整 IOHID 读写/拔插，以及 Sparkle sandbox XPC 更新；
-在这些真机门禁通过前，正式产物继续保持非沙箱。具体边界、候选 entitlements 和验收矩阵
-见
+设置页已经提供可选的普通全局快捷键来调节当前选中 DAC 的硬件音量，不拦截系统媒体键，
+也不依赖 Core Audio 默认输出。系统数字音量保持 100% 仍只是独立的未来候选功能，不能
+被用来决定独占播放时快捷键控制哪台 DAC。沙箱迁移仍须验证 USB entitlement 下的完整
+IOHID 读写/拔插、快捷键以及 Sparkle sandbox XPC 更新；在这些真机门禁通过前，正式产物
+继续保持非沙箱。具体边界、候选 entitlements 和验收矩阵见
 [`Documentation/Architecture.md`](Documentation/Architecture.md#多型号支持下的沙箱策略)。
 
 UA1 II 的 HID 控制路径目前只在 Apple Silicon 真机完成过硬件回归。CI 在 `xcode-27`

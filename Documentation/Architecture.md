@@ -196,23 +196,26 @@ DACBar 采用“保持可沙箱化、非沙箱作为当前发布默认值”的�
 明确的 Mac App Store 产品需求时，才考虑另建沙箱变体；该变体只能包含已验证的设备子集，
 移除 Sparkle，并接受与直接发行版不同的能力矩阵和发布流程。
 
-### 拟议的系统音量保护与沙箱迁移
+### 全局快捷键与拟议的系统音量保护
 
-不拦截系统音量媒体键。用户可以选择启用“系统数字音量保持 100%”：当受控 DAC 同时是
-macOS 默认输出设备时，通过 Core Audio property listener 被动监听默认输出设备、音量和
-静音属性；若对应属性存在且可写，在变化后把数字音量恢复为 `1.0`。切换到未受控输出时
-立即停止干预。系统静音是独立属性，应提供明确策略，不得假定写入音量会同时取消静音。
+硬件音量快捷键已经实现。`GlobalHotKeyController` 通过 Carbon
+`RegisterEventHotKey` 只注册用户指定的两个组合键，而不使用 `NSEvent` 全局键盘监控、
+`CGEventTap` 或系统媒体键拦截，因此正常路径不申请 Accessibility 或 Input Monitoring
+权限。默认组合为 `⌃⌘↑` / `⌃⌘↓`，默认关闭；设置窗口负责启用、录制、冲突状态和恢复
+默认值。
 
-该功能由 App 层独立的 `SystemAudioController`（暂定名）负责，不放进 `DeviceModel`，
-也不进入设备 wire protocol。它负责 Core Audio callback 的生命周期和隔离，并只向 UI
-投影启用状态、匹配状态和错误。设备 plug-in 可以提供可选的 Audio output identity/
-matcher；在多台同型号 DAC 无法把 Core Audio output 与 HID location 可靠关联时必须
-fail closed，不得把热键写到可能错误的设备。
+快捷键的路由真相源是 `DeviceModel.selected` 所代表的当前控制 session。播放器使用独占
+模式时，macOS 默认输出可能仍是另一台设备，因此 Core Audio 默认输出不能作为快捷键的
+前置条件或目标选择依据。所选设备不在 ready 状态时操作 fail closed；多设备场景沿用面板
+中的显式选择。快捷键最终进入与音量滑块相同的 capability-driven mutation 路径，从而
+复用 Driver 的范围、步长、合并、USB pacing、确认和有限重试语义。
 
-硬件音量使用用户自行设置的普通全局快捷键。实现应采用注册确定组合键的 hot-key API，
-而不是 `NSEvent` 全局键盘监控、`CGEventTap` 或系统媒体键拦截；因此正常路径不申请
-Accessibility 或 Input Monitoring 权限。系统媒体键仍由 macOS 处理，随后数字音量保护
-把受控输出恢复到 100%；它们不会改变 DAC 的硬件音量。
+系统媒体键仍完全由 macOS 处理，不会直接改变 DAC 的硬件音量。“系统数字音量保持
+100%”尚未实现，且必须作为与硬件快捷键解耦的未来功能重新设计。若以后通过 Core Audio
+property listener 被动监听音量和静音属性，不能假定受控 DAC 同时是系统默认输出；需要
+明确定义独占模式、设备身份映射、瞬时音量跳变和多设备 fail-closed 行为。该功能应由 App
+层独立 controller 负责 callback 生命周期与隔离，不放入设备 wire protocol，也不得改变
+上述快捷键路由规则。
 
 沙箱候选配置至少包括：
 
