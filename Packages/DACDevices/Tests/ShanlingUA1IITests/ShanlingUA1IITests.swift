@@ -130,8 +130,8 @@ struct ShanlingUA1IITests {
                 == .unmatched(write))
     }
 
-    @Test("An old ACK cannot confirm an identical retry")
-    func identicalRetryDoesNotStealLateAcknowledgement() throws {
+    @Test("An identical retry is confirmed when only one ACK arrives")
+    func identicalRetryWithOneAcknowledgement() throws {
         let write = try ShanlingUA1II.Write(.volume, 21)
         let start = ContinuousClock.now
         var session = ShanlingUA1II.AcknowledgementSession(
@@ -141,12 +141,29 @@ struct ShanlingUA1IITests {
         #expect(session.timeout(first, now: start) == write)
         let retry = session.reserve(write)
 
-        // Exact old failure sequence: the first ACK arrives after timeout and
-        // after the same-value retry has become outstanding.
+        // The wire cannot reveal whether this is S1's late ACK or S2's normal
+        // ACK. It must satisfy the current idempotent intent so a successfully
+        // applied retry cannot time out merely because S1's ACK was lost.
         #expect(session.acknowledge(write, now: start + .milliseconds(10))
-                == .ignoredLate(first, write))
-        #expect(session.acknowledge(write, now: start + .milliseconds(20))
                 == .confirmed(retry, write))
+        #expect(session.timeout(retry, now: start + .milliseconds(20)) == nil)
+    }
+
+    @Test("Two ACKs for an identical retry produce only one confirmation")
+    func identicalRetryWithTwoAcknowledgements() throws {
+        let write = try ShanlingUA1II.Write(.volume, 21)
+        let start = ContinuousClock.now
+        var session = ShanlingUA1II.AcknowledgementSession(
+            debtRetention: .seconds(2))
+        let first = session.reserve(write)
+
+        #expect(session.timeout(first, now: start) == write)
+        let retry = session.reserve(write)
+
+        #expect(session.acknowledge(write, now: start + .milliseconds(10))
+                == .confirmed(retry, write))
+        #expect(session.acknowledge(write, now: start + .milliseconds(20))
+                == .ignoredLate(first, write))
         #expect(session.acknowledge(write, now: start + .milliseconds(30))
                 == .unmatched(write))
         #expect(session.timeout(retry, now: start + .milliseconds(40)) == nil)

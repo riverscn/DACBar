@@ -4,10 +4,11 @@ extension ShanlingUA1II {
     /// Tracks UA1 II write acknowledgements independently of IOHID delivery.
     ///
     /// The wire protocol echoes only `(command, value)`, not a submission ID.
-    /// A timed-out submission therefore leaves one acknowledgement debt behind.
-    /// Matching that debt before an identical retry prevents an old ACK from
-    /// confirming the retry and gives every submission at most one terminal
-    /// result: either `timeout` or `acknowledge`, never both.
+    /// Identical retries are therefore one idempotent logical mutation on the
+    /// device: while a retry is pending, the next matching ACK confirms that
+    /// current intent regardless of which physical attempt produced it. A
+    /// timed-out submission leaves acknowledgement debt only so a surplus ACK
+    /// can be ignored instead of becoming a duplicate confirmation.
     struct AcknowledgementSession {
         typealias SubmissionID = Int
 
@@ -51,15 +52,18 @@ extension ShanlingUA1II {
         ) -> Acknowledgement {
             pruneDebts(now: now)
 
-            // The device preserves report order. An ACK owed by an earlier
-            // timed-out submission must be consumed before an identical retry.
-            if let index = debts.firstIndex(where: { $0.write == write }) {
-                let debt = debts.remove(at: index)
-                return .ignoredLate(debt.id, debt.write)
-            }
+            // The protocol cannot attribute an ACK to one of two identical
+            // physical attempts. Satisfy the current logical intent first so
+            // a retry cannot be dropped after the device has applied it.
             if let index = pending.firstIndex(where: { $0.write == write }) {
                 let submission = pending.remove(at: index)
                 return .confirmed(submission.id, submission.write)
+            }
+            // With no current matching intent, consume one ACK owed by an
+            // earlier timed-out attempt without emitting another terminal event.
+            if let index = debts.firstIndex(where: { $0.write == write }) {
+                let debt = debts.remove(at: index)
+                return .ignoredLate(debt.id, debt.write)
             }
             return .unmatched(write)
         }
