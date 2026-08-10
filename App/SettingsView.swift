@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -32,6 +33,11 @@ struct SettingsView: View {
             idealHeight: 400,
             maxHeight: .infinity)
         .scenePadding()
+        .onAppear { launchAtLogin.refresh() }
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification)) { _ in
+            launchAtLogin.refresh()
+        }
     }
 }
 
@@ -99,7 +105,6 @@ private struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { launchAtLogin.refresh() }
     }
 
     private var versionDescription: String {
@@ -135,13 +140,27 @@ private struct ShortcutSettingsView: View {
                     "settings.volume-up", defaultValue: "Increase Volume")) {
                     HotKeyRecorder(shortcut: Binding(
                         get: { hotKeys.volumeUp },
-                        set: { hotKeys.setShortcut($0, for: .increase) }))
+                        set: { hotKeys.setShortcut($0, for: .increase) }),
+                    onRecordingChanged: { isRecording in
+                        if isRecording {
+                            hotKeys.beginShortcutRecording()
+                        } else {
+                            hotKeys.endShortcutRecording()
+                        }
+                    })
                 }
                 LabeledContent(AppL10n.text(
                     "settings.volume-down", defaultValue: "Decrease Volume")) {
                     HotKeyRecorder(shortcut: Binding(
                         get: { hotKeys.volumeDown },
-                        set: { hotKeys.setShortcut($0, for: .decrease) }))
+                        set: { hotKeys.setShortcut($0, for: .decrease) }),
+                    onRecordingChanged: { isRecording in
+                        if isRecording {
+                            hotKeys.beginShortcutRecording()
+                        } else {
+                            hotKeys.endShortcutRecording()
+                        }
+                    })
                 }
 
                 HStack {
@@ -182,6 +201,9 @@ private struct ShortcutSettingsView: View {
         switch hotKeys.status {
         case .disabled:
             return AppL10n.text("settings.shortcut-disabled", defaultValue: "Disabled")
+        case .suspended:
+            return AppL10n.text(
+                "settings.shortcut-recording", defaultValue: "Paused While Recording")
         case .registered:
             return AppL10n.text("settings.shortcut-active", defaultValue: "Active")
         case .duplicate:

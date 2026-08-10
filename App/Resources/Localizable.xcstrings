@@ -40,6 +40,7 @@
     "settings.shortcut-conflict" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unavailable or Used by Another App" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不可用或已被其他 App 占用" } } } },
     "settings.shortcut-disabled" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Disabled" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未启用" } } } },
     "settings.shortcut-duplicate" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose Two Different Shortcuts" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请选择两个不同的快捷键" } } } },
+    "settings.shortcut-recording" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused While Recording" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "录制期间已暂停" } } } },
     "settings.shortcut-status" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Status" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "状态" } } } },
     "settings.shortcut-target" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Target DAC" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "目标 DAC" } } } },
     "settings.shortcuts" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Shortcuts" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "快捷键" } } } },

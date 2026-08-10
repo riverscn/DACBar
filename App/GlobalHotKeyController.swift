@@ -12,6 +12,7 @@ enum HotKeyDirection: UInt32, Sendable {
 final class GlobalHotKeyController {
     enum RegistrationStatus: Equatable {
         case disabled
+        case suspended
         case registered
         case duplicate
         case failed(OSStatus)
@@ -27,6 +28,7 @@ final class GlobalHotKeyController {
     @ObservationIgnored private var eventHandler: EventHandlerRef?
     @ObservationIgnored private var handlerInstallationResult: OSStatus = noErr
     @ObservationIgnored private var registrations: [UInt32: EventHotKeyRef] = [:]
+    @ObservationIgnored private var recordingSuspensionCount = 0
 
     private static let signature: OSType = 0x4441_4342 // "DACB"
 
@@ -96,10 +98,33 @@ final class GlobalHotKeyController {
         applyRegistration()
     }
 
+    /// Carbon consumes registered shortcuts before the recorder's first responder
+    /// can see them. Keep registration suspended for every active recorder; the
+    /// count also covers the brief overlap when focus moves between the two
+    /// recorder buttons.
+    func beginShortcutRecording() {
+        recordingSuspensionCount += 1
+        if recordingSuspensionCount == 1 {
+            applyRegistration()
+        }
+    }
+
+    func endShortcutRecording() {
+        guard recordingSuspensionCount > 0 else { return }
+        recordingSuspensionCount -= 1
+        if recordingSuspensionCount == 0 {
+            applyRegistration()
+        }
+    }
+
     private func applyRegistration() {
         unregisterAll()
         guard isEnabled else {
             status = .disabled
+            return
+        }
+        guard recordingSuspensionCount == 0 else {
+            status = .suspended
             return
         }
         guard handlerInstallationResult == noErr else {
@@ -144,6 +169,7 @@ final class GlobalHotKeyController {
 
     private func received(identifier: UInt32) {
         guard isEnabled,
+              recordingSuspensionCount == 0,
               status == .registered,
               let direction = HotKeyDirection(rawValue: identifier)
         else { return }
