@@ -11,8 +11,6 @@ struct DeviceControlsView: View {
     let textValue: (DACDeviceKit.SettingID) -> String?
     let onChange: (DACDeviceKit.SettingID, Int) -> Void
 
-    @AppStorage("showDisplaySection") private var showDisplaySection = false
-
     private var groups: [DACDeviceKit.SettingGroup] {
         settings.reduce(into: []) { result, setting in
             if !result.contains(setting.group) { result.append(setting.group) }
@@ -32,13 +30,10 @@ struct DeviceControlsView: View {
     @ViewBuilder
     private func groupView(_ group: DACDeviceKit.SettingGroup) -> some View {
         if group.isCollapsible {
-            DisclosureGroup(isExpanded: expansionBinding(for: group)) {
+            CollapsibleSettingGroup(group: group) {
                 rows(in: group)
                     .padding(.top, 4)
-            } label: {
-                Text(group.title).font(.callout)
             }
-            .padding(.top, 10)
         } else {
             rows(in: group)
         }
@@ -60,14 +55,49 @@ struct DeviceControlsView: View {
         }
     }
 
-    private func expansionBinding(for group: DACDeviceKit.SettingGroup) -> Binding<Bool> {
-        // Preserve the existing display preference. Future collapsible groups
-        // can introduce their own stable AppStorage keys without affecting the
-        // driver/capability model.
+}
+
+struct SettingGroupExpansionPreference: Equatable {
+    let key: String
+    let defaultValue: Bool
+
+    init(group: DACDeviceKit.SettingGroup) {
         if group.id == DACDeviceKit.SettingGroup.display.id {
-            return $showDisplaySection
+            key = "showDisplaySection"
+            defaultValue = false
+        } else {
+            key = "settingGroup.\(group.id).isExpanded"
+            defaultValue = true
         }
-        return .constant(true)
+    }
+
+    func storage(store: UserDefaults? = nil) -> AppStorage<Bool> {
+        AppStorage(wrappedValue: defaultValue, key, store: store)
+    }
+}
+
+private struct CollapsibleSettingGroup<Content: View>: View {
+    let group: DACDeviceKit.SettingGroup
+    let content: Content
+
+    @AppStorage private var isExpanded: Bool
+
+    init(
+        group: DACDeviceKit.SettingGroup,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.group = group
+        self.content = content()
+        _isExpanded = SettingGroupExpansionPreference(group: group).storage()
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            content
+        } label: {
+            Text(group.title).font(.callout)
+        }
+        .padding(.top, 10)
     }
 }
 

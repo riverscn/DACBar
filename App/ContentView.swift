@@ -267,7 +267,7 @@ struct ContentView: View {
             settings: model.settings,
             value: { model.value(for: $0) },
             textValue: { model.textValue(for: $0) },
-            onChange: { model.updateDraft($0, value: $1) })
+            onChange: { model.update($0, to: $1) })
     }
 
     // MARK: - States

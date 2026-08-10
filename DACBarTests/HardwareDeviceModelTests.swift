@@ -31,7 +31,12 @@ struct HardwareDeviceModelTests {
         try await Task.sleep(for: .milliseconds(200))
         let target = try hardwareTarget()
         let watcher = SelectedHardwareWatcher(device: target)
-        let model = DeviceModel(watcher: watcher) { device in
+        let selection = isolatedSelectionStore()
+        defer { selection.tearDown() }
+        let model = DeviceModel(
+            selectionStore: selection.store,
+            watcher: watcher
+        ) { device in
             try ShanlingUA1II.Plugin().makeDriver(for: device.device)
         }
         try await waitUntil(timeout: .seconds(3)) { model.phase == .ready }
@@ -43,8 +48,7 @@ struct HardwareDeviceModelTests {
             // than the transport, while DeviceModel keeps the latest target.
             for index in 0...60 {
                 let value = index.isMultiple(of: 2) ? alternate : original
-                model.draft.brightness = value
-                model.scheduleApply()
+                _ = model.update(.brightness, to: value)
                 try await Task.sleep(for: .milliseconds(20))
             }
 
@@ -54,14 +58,18 @@ struct HardwareDeviceModelTests {
             #expect(model.phase == .ready)
             #expect(model.confirmed.brightness == alternate)
 
-            model.draft.brightness = original
-            model.scheduleApply()
+            #expect(model.update(.brightness, to: original))
             try await waitUntil(timeout: .seconds(3)) {
                 model.phase == .ready && model.confirmed.brightness == original
             }
             #expect(model.phase == .ready)
             #expect(model.confirmed.brightness == original)
         }
+    }
+
+    private func isolatedSelectionStore() -> IsolatedSelectionStoreFixture {
+        IsolatedSelectionStoreFixture(
+            suitePrefix: "DACBarTests.HardwareDeviceModel")
     }
 
     private func hardwareTarget() throws -> AttachedDevice {
