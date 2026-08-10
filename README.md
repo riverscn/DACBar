@@ -351,16 +351,18 @@ DACBAR_SPARKLE_PUBLIC_KEY=<Base64-encoded-Ed25519-public-key> \
 
 GitHub Actions 已把检查拆成 `ci.yml`、`release.yml` 和手动的 `hardware.yml`。源码测试、
 Universal 2 构建、签名和公证都运行在隔离的标准 GitHub-hosted `xcode-27` ARM64 runner；
-随后 `macos-26-intel` 下载**同一个 DMG**，校验 x86_64 切片并实际启动 App。只有两边都
-通过，独立的 Ubuntu job 才以最小 `contents: write` 权限创建 GitHub Release。普通 CI
+随后 ARM、`macos-26-intel` 与最低系统 `macos-14` job 下载**同一个 DMG**，验证 SHA-256、
+Gatekeeper 并实际启动 App。全部通过后，独立的 Ubuntu job 才以最小 `contents: write`
+权限创建 GitHub Release。普通 CI
 使用 `pull_request`、只读 token 且不接触发布 secrets；公开仓库的 standard hosted runner
 不计 Actions 分钟，larger runner 不在本项目的自动化路径中。
 
 USB 真机回归仍需要接有设备的 Mac，因此只保留一个带 `DACBar-Hardware` 自定义标签的
 Apple Silicon self-hosted runner。它只允许仓库所有者在 `main` 上手动触发，不参与普通
 push、PR 或发布，也不持有发布凭据。推送与 Xcode 有效 `MARKETING_VERSION` 一致的 `v*`
-tag 后，发布 workflow 才会读取仓库 secrets 完成签名、公证、DMG、SHA-256 和
-GitHub Release。完整配置见
+签名 annotated tag 后，无 secret 的前置 job 会确认 GitHub 已验证 tag 签名且 commit 位于
+`origin/main`；受保护的 `release-signing` environment 获得人工批准后，workflow 才读取其中
+的 secrets 完成签名、公证、DMG、SHA-256 和 GitHub Release。完整配置见
 [`Documentation/Releasing.md`](Documentation/Releasing.md)。
 
 正式发布版使用 Sparkle 2.9.5。第二次正常启动时由 Sparkle 的标准授权界面询问用户是否

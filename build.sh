@@ -39,9 +39,10 @@ SPARKLE_PUBLIC_KEY="${DACBAR_SPARKLE_PUBLIC_KEY:-}"
     echo "构建号必须是正整数：${BUILD_NUMBER}" >&2; exit 1;
 }
 if [ -n "$SPARKLE_FEED_URL" ] || [ -n "$SPARKLE_PUBLIC_KEY" ]; then
-    [ -n "$SPARKLE_FEED_URL" ] && [[ "$SPARKLE_FEED_URL" == https://* ]] || {
-        echo "Sparkle 更新必须提供 HTTPS DACBAR_SPARKLE_FEED_URL。" >&2; exit 1;
-    }
+    if [ -z "$SPARKLE_FEED_URL" ] || [[ "$SPARKLE_FEED_URL" != https://* ]]; then
+        echo "Sparkle 更新必须提供 HTTPS DACBAR_SPARKLE_FEED_URL。" >&2
+        exit 1
+    fi
     [[ "$SPARKLE_PUBLIC_KEY" =~ ^[A-Za-z0-9+/]{43}=$ ]] || {
         echo "DACBAR_SPARKLE_PUBLIC_KEY 必须是 32 字节 Ed25519 公钥的 Base64。" >&2
         exit 1
@@ -262,7 +263,12 @@ if [ -n "${DACBAR_NOTARY_PROFILE:-}" ]; then
     xcrun stapler staple "$DIST_DMG"
     DACBAR_EXPECTED_APP_ID="$EXPECTED_APP_ID" DACBAR_REQUIRE_DISTRIBUTION=1 \
         ./scripts/validate-dmg.sh "$DIST_DMG"
-    shasum -a 256 "$DIST_DMG" > "$DIST_DMG.sha256"
+    DIST_DMG_DIRECTORY=$(dirname "$DIST_DMG")
+    DIST_DMG_BASENAME=$(basename "$DIST_DMG")
+    (
+        cd "$DIST_DMG_DIRECTORY"
+        shasum -a 256 "$DIST_DMG_BASENAME" > "$DIST_DMG_BASENAME.sha256"
+    )
     echo "    分发镜像：$(pwd)/${DIST_DMG}"
     NOTARIZED=1
 fi

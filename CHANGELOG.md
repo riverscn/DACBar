@@ -9,14 +9,18 @@
 
 - Sparkle 改为验证包含内嵌发布说明的 appcast 以及更新 DMG，并使用系统标准授权界面
   保存自动检查与安装选择。
-- 更新按钮跟随 Sparkle 的实时可检查状态；发布流水线验证签名 feed，并隔离、清理
-  self-hosted runner 的临时签名钥匙串。
+- 更新按钮跟随 Sparkle 的实时可检查状态；发布流水线验证签名 feed，并在一次性
+  GitHub-hosted 签名 runner 上隔离、清理临时签名钥匙串。
 - 发布 job 改为现场生成临时钥匙串密码；Developer ID 身份和 Team ID 作为公开 Actions
   Variables 管理，并补充首次发布所需凭据、来源、备份与 runner 配置清单。
 - 对外发布改为同时签名、公证和装订 App 与 APFS/LZFSE DMG；镜像仅包含 App 与
   `/Applications` 拖放链接，临时公证 ZIP 不进入 Release。
-- CI 与 tag 发布分别在 `ARM64`、`X64` self-hosted Mac 上原生执行测试；两边均通过后
-  才构建一次并强制校验 Universal 2 产物。
+- CI 与 tag 发布使用 GitHub-hosted ARM、Intel 和最低系统 macOS 14 runner；Universal 2
+  产物只签名、公证一次，再以 SHA-256 固定同一 DMG 完成各架构与最低系统启动门禁。
+- 发布前置门禁要求 release commit 位于 `origin/main` 且 annotated tag 的签名已由 GitHub
+  验证；签名 secrets 由受保护的 `release-signing` environment 审批后才可访问。
+- 发布 checksum 只记录 DMG basename，并在 ARM、Intel 和最终发布 job 使用前重新验证；
+  匹配的 dSYM 经 AES-256/PBKDF2 加密后作为 Actions artifact 保留 90 天。
 - 用户版本改由 `App/Configuration/Version.xcconfig` 单点维护；Xcode、发布脚本、tag、
   DMG 与 Sparkle appcast 不再复制或解析独立 `VERSION` 文件。
 - Dependabot 每周监控 Swift Package 与 GitHub Actions 依赖；发布文档加入 N-1 → N

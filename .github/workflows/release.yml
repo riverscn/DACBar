@@ -8,12 +8,58 @@ permissions:
   contents: read
 
 jobs:
+  release-trust:
+    name: Verify release tag trust
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require a verified annotated release tag on origin/main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$GITHUB_REF_TYPE" = tag ]]
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+
+          TAG_OBJECT=$(gh api \
+            "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" \
+            --jq '.object.type + " " + .object.sha')
+          read -r TAG_OBJECT_TYPE TAG_OBJECT_SHA <<< "$TAG_OBJECT"
+          if [[ "$TAG_OBJECT_TYPE" != tag ]]; then
+            echo "::error::Release tags must be signed annotated tags, not lightweight tags"
+            exit 1
+          fi
+
+          TAG_DETAILS=$(gh api \
+            "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" \
+            --jq '[.tag, .object.type, .object.sha, (.verification.verified | tostring), .verification.reason] | @tsv')
+          IFS=$'\t' read -r TAG_NAME TARGET_TYPE TARGET_SHA VERIFIED REASON <<< "$TAG_DETAILS"
+          [[ "$TAG_NAME" = "$GITHUB_REF_NAME" ]]
+          [[ "$TARGET_TYPE" = commit ]]
+          [[ "$TARGET_SHA" = "$GITHUB_SHA" ]]
+          if [[ "$VERIFIED" != true || "$REASON" != valid ]]; then
+            echo "::error::GitHub did not verify the release tag signature (reason: $REASON)"
+            exit 1
+          fi
+
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "::error::Release commit $GITHUB_SHA is not contained in origin/main"
+            exit 1
+          fi
+
   source-tests:
     name: Xcode 27 release tests
+    needs: release-trust
     runs-on: xcode-27
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -24,6 +70,11 @@ jobs:
           xcodebuild -version | grep -q '^Xcode 27\.'
           swift --version | grep -q 'Swift version 6\.4'
           test "$(uname -m)" = arm64
+
+      - name: Verify tag matches the authoritative Xcode marketing version
+        run: |
+          VERSION=$(./scripts/read-version.sh Distribution)
+          test "$GITHUB_REF_NAME" = "v$VERSION"
 
       - name: Test with complete concurrency checking
         run: >-
@@ -62,8 +113,10 @@ jobs:
     needs: source-tests
     runs-on: xcode-27
     timeout-minutes: 60
+    environment:
+      name: release-signing
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -75,11 +128,6 @@ jobs:
           swift --version | grep -q 'Swift version 6\.4'
           test "$(uname -m)" = arm64
 
-      - name: Verify tag matches the effective Xcode marketing version
-        run: |
-          VERSION=$(./scripts/read-version.sh Distribution)
-          test "${GITHUB_REF_NAME}" = "v$VERSION"
-
       - name: Require release credentials and metadata
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
@@ -87,6 +135,7 @@ jobs:
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          DSYM_ARCHIVE_PASSWORD: ${{ secrets.DSYM_ARCHIVE_PASSWORD }}
           DEVELOPER_ID_APPLICATION: ${{ vars.DEVELOPER_ID_APPLICATION }}
           NOTARY_TEAM_ID: ${{ vars.NOTARY_TEAM_ID }}
           SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
@@ -98,6 +147,7 @@ jobs:
             NOTARY_APPLE_ID \
             NOTARY_PASSWORD \
             SPARKLE_PRIVATE_KEY \
+            DSYM_ARCHIVE_PASSWORD \
             DEVELOPER_ID_APPLICATION \
             NOTARY_TEAM_ID \
             SPARKLE_PUBLIC_ED_KEY; do
@@ -106,6 +156,11 @@ jobs:
               missing=1
             fi
           done
+          if [ -n "${DSYM_ARCHIVE_PASSWORD:-}" ] \
+              && [ "${#DSYM_ARCHIVE_PASSWORD}" -lt 32 ]; then
+            echo "::error::DSYM_ARCHIVE_PASSWORD must contain at least 32 characters"
+            missing=1
+          fi
           exit "$missing"
 
       - name: Import Developer ID certificate
@@ -148,6 +203,40 @@ jobs:
           DACBAR_SPARKLE_FEED_URL: https://github.com/${{ github.repository }}/releases/latest/download/appcast.xml
         run: ./build.sh release
 
+      - name: Package the matching private dSYM
+        env:
+          DSYM_ARCHIVE_PASSWORD: ${{ secrets.DSYM_ARCHIVE_PASSWORD }}
+        run: |
+          VERSION=$(plutil -extract CFBundleShortVersionString raw \
+            dist/DACBar.app/Contents/Info.plist)
+          APP_BINARY=dist/DACBar.app/Contents/MacOS/DACBar
+          DSYM=.build/xcode/Build/Products/Distribution/DACBar.app.dSYM
+          test -d "$DSYM/Contents/Resources/DWARF"
+          dwarfdump --uuid "$APP_BINARY" | awk '{print $2}' | sort > "$RUNNER_TEMP/app-uuids"
+          dwarfdump --uuid "$DSYM" | awk '{print $2}' | sort > "$RUNNER_TEMP/dsym-uuids"
+          cmp "$RUNNER_TEMP/app-uuids" "$RUNNER_TEMP/dsym-uuids"
+          mkdir -p debug-symbols
+          PLAIN_ARCHIVE="$RUNNER_TEMP/DACBar-$VERSION.dSYM.zip"
+          VERIFIED_ARCHIVE="$RUNNER_TEMP/DACBar-$VERSION.dSYM.verified.zip"
+          ENCRYPTED_ARCHIVE="debug-symbols/DACBar-$VERSION.dSYM.zip.enc"
+          ditto -c -k --keepParent "$DSYM" "$PLAIN_ARCHIVE"
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in "$PLAIN_ARCHIVE" -out "$ENCRYPTED_ARCHIVE" \
+            -pass env:DSYM_ARCHIVE_PASSWORD
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in "$ENCRYPTED_ARCHIVE" -out "$VERIFIED_ARCHIVE" \
+            -pass env:DSYM_ARCHIVE_PASSWORD
+          cmp "$PLAIN_ARCHIVE" "$VERIFIED_ARCHIVE"
+          rm -f "$PLAIN_ARCHIVE" "$VERIFIED_ARCHIVE"
+
+      - name: Upload matching dSYM privately
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: DACBar-dSYMs-${{ github.sha }}
+          path: debug-symbols/
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Generate signed Sparkle appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
@@ -174,13 +263,16 @@ jobs:
           printf '%s' "$SPARKLE_PRIVATE_KEY" | \
             .build/xcode/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update \
               --verify --ed-key-file - updates/appcast.xml
-          ! grep -q 'sparkle:hardwareRequirements' updates/appcast.xml
+          if grep -q 'sparkle:hardwareRequirements' updates/appcast.xml; then
+            echo "::error::Appcast unexpectedly restricts supported hardware"
+            exit 1
+          fi
           mkdir -p release-candidate
           cp dist/DACBar-*.dmg dist/DACBar-*.dmg.sha256 \
             updates/appcast.xml release-candidate/
 
       - name: Upload the notarized release candidate
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: DACBar-release-${{ github.sha }}
           path: release-candidate/
@@ -193,13 +285,42 @@ jobs:
           security delete-keychain "$RUNNER_TEMP/dacbar-signing.keychain-db" 2>/dev/null || true
           rm -f "$RUNNER_TEMP/developer-id.p12" "$RUNNER_TEMP/dacbar-signing.keychain-db"
 
+  arm-smoke:
+    name: Validate final release candidate on ARM
+    needs: notarized-artifacts
+    runs-on: xcode-27
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted ARM64 image
+        run: test "$(uname -m)" = arm64
+
+      - name: Download the final notarized release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: DACBar-release-${{ github.sha }}
+          path: release-assets
+
+      - name: Verify checksum, Gatekeeper and the ARM slice
+        run: |
+          DMGS=(release-assets/DACBar-*.dmg)
+          CHECKSUMS=(release-assets/DACBar-*.dmg.sha256)
+          test "${#DMGS[@]}" -eq 1
+          test "${#CHECKSUMS[@]}" -eq 1
+          ./scripts/verify-dmg-checksum.sh "${DMGS[0]}" "${CHECKSUMS[0]}"
+          DACBAR_REQUIRE_DISTRIBUTION=1 ./scripts/validate-dmg.sh "${DMGS[0]}"
+          ./scripts/smoke-launch-dmg.sh "${DMGS[0]}"
+
   intel-smoke:
     name: Validate release candidate on Intel
     needs: notarized-artifacts
     runs-on: macos-26-intel
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -207,7 +328,7 @@ jobs:
         run: test "$(uname -m)" = x86_64
 
       - name: Download the notarized release candidate
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: DACBar-release-${{ github.sha }}
           path: release-assets
@@ -215,20 +336,54 @@ jobs:
       - name: Verify Gatekeeper and launch the Intel slice
         run: |
           DMGS=(release-assets/DACBar-*.dmg)
+          CHECKSUMS=(release-assets/DACBar-*.dmg.sha256)
           test "${#DMGS[@]}" -eq 1
+          test "${#CHECKSUMS[@]}" -eq 1
+          ./scripts/verify-dmg-checksum.sh "${DMGS[0]}" "${CHECKSUMS[0]}"
+          DACBAR_REQUIRE_DISTRIBUTION=1 ./scripts/validate-dmg.sh "${DMGS[0]}"
+          ./scripts/smoke-launch-dmg.sh "${DMGS[0]}"
+
+  minimum-macos-smoke:
+    name: Launch final release candidate on macOS 14
+    needs: notarized-artifacts
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Require the hosted macOS 14 ARM64 image
+        run: |
+          test "$(uname -m)" = arm64
+          sw_vers -productVersion | grep -q '^14\.'
+
+      - name: Download the final notarized release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: DACBar-release-${{ github.sha }}
+          path: release-assets
+
+      - name: Verify checksum and launch on the deployment floor
+        run: |
+          DMGS=(release-assets/DACBar-*.dmg)
+          CHECKSUMS=(release-assets/DACBar-*.dmg.sha256)
+          test "${#DMGS[@]}" -eq 1
+          test "${#CHECKSUMS[@]}" -eq 1
+          ./scripts/verify-dmg-checksum.sh "${DMGS[0]}" "${CHECKSUMS[0]}"
           DACBAR_REQUIRE_DISTRIBUTION=1 ./scripts/validate-dmg.sh "${DMGS[0]}"
           ./scripts/smoke-launch-dmg.sh "${DMGS[0]}"
 
   publish-release:
     name: Publish GitHub release
-    needs: [notarized-artifacts, intel-smoke]
+    needs: [notarized-artifacts, arm-smoke, intel-smoke, minimum-macos-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - name: Download the validated release candidate
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: DACBar-release-${{ github.sha }}
           path: release-assets
@@ -242,6 +397,11 @@ jobs:
           test "${#DMGS[@]}" -eq 1
           test "${#CHECKSUMS[@]}" -eq 1
           test -f release-assets/appcast.xml
+          DMG_BASENAME=$(basename "${DMGS[0]}")
+          CHECKSUM_BASENAME=$(basename "${CHECKSUMS[0]}")
+          RECORDED_BASENAME=$(awk 'NF == 2 {print $2}' "${CHECKSUMS[0]}")
+          test "$RECORDED_BASENAME" = "$DMG_BASENAME"
+          (cd release-assets && sha256sum --check "$CHECKSUM_BASENAME")
           gh release create "$GITHUB_REF_NAME" \
             "${DMGS[0]}" \
             "${CHECKSUMS[0]}" \

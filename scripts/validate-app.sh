@@ -99,11 +99,13 @@ done
 codesign --verify --deep --strict --verbose=2 "$APP"
 
 SPARKLE="$APP/Contents/Frameworks/Sparkle.framework/Versions/B"
-[ ! -e "$SPARKLE/XPCServices" ] && [ ! -L "$SPARKLE/XPCServices" ] \
-    || fail "unused Sparkle XPC services are present"
-[ ! -e "$APP/Contents/Frameworks/Sparkle.framework/XPCServices" ] \
-    && [ ! -L "$APP/Contents/Frameworks/Sparkle.framework/XPCServices" ] \
-    || fail "unused Sparkle XPCServices framework link is present"
+if [ -e "$SPARKLE/XPCServices" ] || [ -L "$SPARKLE/XPCServices" ]; then
+    fail "unused Sparkle XPC services are present"
+fi
+if [ -e "$APP/Contents/Frameworks/Sparkle.framework/XPCServices" ] \
+        || [ -L "$APP/Contents/Frameworks/Sparkle.framework/XPCServices" ]; then
+    fail "unused Sparkle XPCServices framework link is present"
+fi
 for BINARY in \
     "$SPARKLE/Sparkle" \
     "$SPARKLE/Autoupdate" \
