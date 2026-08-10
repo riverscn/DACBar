@@ -132,22 +132,22 @@ struct HardwareIntegrationTests {
     )
     func completionIntervalSweep() async throws {
         let configuration = try SweepConfiguration()
-        let locationID = try HardwareTarget.locationID()
+        let device = try HardwareTarget.device()
 
         for interval in configuration.intervals {
             try await measure(
                 intervalMilliseconds: interval,
                 writeCount: configuration.writeCount,
-                locationID: locationID)
+                device: device)
         }
     }
 
     private func measure(
         intervalMilliseconds: Int,
         writeCount: Int,
-        locationID: UInt32
+        device: ShanlingUA1II.Device
     ) async throws {
-        let connection = try ShanlingUA1II.Connection(locationID: locationID)
+        let connection = try ShanlingUA1II.Connection(device: device)
         defer { connection.close() }
 
         let initial = try await connection.read()
@@ -221,7 +221,7 @@ struct HardwareIntegrationTests {
 
         print(
             "SHANLING_SWEEP "
-                + "location=0x\(String(locationID, radix: 16, uppercase: true)) "
+                + "location=0x\(String(device.locationID, radix: 16, uppercase: true)) "
                 + "interval_ms=\(intervalMilliseconds) writes=\(writeCount) "
                 + "completions=\(completions) "
                 + "acks=\(stressConfirmations) drops=\(stressDrops) "
@@ -235,7 +235,7 @@ struct HardwareIntegrationTests {
     }
 
     private func hardwareConnection() throws -> ShanlingUA1II.Connection {
-        try ShanlingUA1II.Connection(locationID: HardwareTarget.locationID())
+        try ShanlingUA1II.Connection(device: HardwareTarget.device())
     }
 
     private func runEventTrackingSlice() {
@@ -276,20 +276,20 @@ private struct SweepConfiguration {
 }
 
 private enum HardwareTarget {
-    static func locationID(
+    static func device(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         devices: [ShanlingUA1II.Device]? = nil
-    ) throws -> UInt32 {
+    ) throws -> ShanlingUA1II.Device {
         let attached = try devices ?? ShanlingUA1II.devices()
         if let raw = environment["SHANLING_HARDWARE_LOCATION_ID"] {
             guard let requested = parseLocationID(raw) else {
                 throw HardwareTestConfigurationFailure.invalidLocation(raw)
             }
-            guard attached.contains(where: { $0.locationID == requested }) else {
+            guard let selected = attached.first(where: { $0.locationID == requested }) else {
                 throw HardwareTestConfigurationFailure.locationNotFound(
                     requested, attached.map(\.locationID))
             }
-            return requested
+            return selected
         }
         guard let only = attached.first else {
             throw HardwareTestConfigurationFailure.noDevice
@@ -298,7 +298,14 @@ private enum HardwareTarget {
             throw HardwareTestConfigurationFailure.ambiguous(
                 attached.map(\.locationID))
         }
-        return only.locationID
+        return only
+    }
+
+    static func locationID(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        devices: [ShanlingUA1II.Device]? = nil
+    ) throws -> UInt32 {
+        try device(environment: environment, devices: devices).locationID
     }
 
     private static func parseLocationID(_ raw: String) -> UInt32? {

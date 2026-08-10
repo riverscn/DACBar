@@ -113,7 +113,8 @@ extension DACDeviceKit {
     public struct DeviceRegistry: Sendable {
         public let profiles: [DeviceProfile]
 
-        public init(profiles: [DeviceProfile]) {
+        public init(profiles: [DeviceProfile]) throws {
+            try Self.validate(profiles)
             self.profiles = profiles
         }
 
@@ -159,6 +160,66 @@ extension DACDeviceKit {
 
         public func profile(id: ModelID) -> DeviceProfile? {
             profiles.first { $0.id == id }
+        }
+
+        private static func validate(_ profiles: [DeviceProfile]) throws {
+            var modelIDs: Set<ModelID> = []
+            var driverIDs: Set<DriverID> = []
+            var owners: [HIDMatch: [DeviceProfile]] = [:]
+
+            for profile in profiles {
+                guard !profile.id.rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                    .isEmpty else { throw ConfigurationFailure.emptyModelID }
+                guard !profile.driverID.rawValue
+                    .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                else { throw ConfigurationFailure.emptyDriverID }
+                guard modelIDs.insert(profile.id).inserted else {
+                    throw ConfigurationFailure.duplicateModelID(profile.id)
+                }
+                guard driverIDs.insert(profile.driverID).inserted else {
+                    throw ConfigurationFailure.duplicateDriverID(profile.driverID)
+                }
+                if profile.discoveryKind == .hidService, profile.hidMatches.isEmpty {
+                    throw ConfigurationFailure.missingHIDMatch(profile.id)
+                }
+
+                var profileMatches: Set<HIDMatch> = []
+                for match in profile.hidMatches {
+                    guard (0...0xFFFF).contains(match.vendorID),
+                          (0...0xFFFF).contains(match.productID),
+                          (0...0xFFFF).contains(match.usagePage),
+                          (0...0xFFFF).contains(match.usage),
+                          match.inputReportSize > 0,
+                          match.outputReportSize > 0 else {
+                        throw ConfigurationFailure.invalidHIDMatch(match)
+                    }
+                    guard profileMatches.insert(match).inserted else {
+                        throw ConfigurationFailure.duplicateHIDMatch(profile.id, match)
+                    }
+                    if profile.discoveryKind == .hidService {
+                        owners[match, default: []].append(profile)
+                    }
+                }
+            }
+
+            for (match, matchingProfiles) in owners where matchingProfiles.count > 1 {
+                var productNames: Set<String> = []
+                for profile in matchingProfiles {
+                    let normalized = Set(profile.productNames.map(normalize).filter { !$0.isEmpty })
+                    guard !normalized.isEmpty,
+                          productNames.allSatisfy({ existing in
+                              normalized.allSatisfy { candidate in
+                                  existing != candidate
+                                      && !existing.hasSuffix(" " + candidate)
+                                      && !candidate.hasSuffix(" " + existing)
+                              }
+                          }) else {
+                        throw ConfigurationFailure.conflictingHIDMatch(
+                            match, matchingProfiles.map(\.id))
+                    }
+                    productNames.formUnion(normalized)
+                }
+            }
         }
 
         private static func normalize(_ value: String) -> String {

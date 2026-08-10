@@ -32,9 +32,7 @@ struct HardwareDeviceModelTests {
         let target = try hardwareTarget()
         let watcher = SelectedHardwareWatcher(device: target)
         let model = DeviceModel(watcher: watcher) { device in
-            try ShanlingUA1II.UA1IIDriver(
-                locationID: device.locationID,
-                profile: device.profile)
+            try ShanlingUA1II.Plugin().makeDriver(for: device.device)
         }
         try await waitUntil(timeout: .seconds(3)) { model.phase == .ready }
 
@@ -67,7 +65,7 @@ struct HardwareDeviceModelTests {
     }
 
     private func hardwareTarget() throws -> AttachedDevice {
-        let devices = try ShanlingUA1II.devices()
+        let devices = try ShanlingUA1II.Plugin().devices()
         let environment = ProcessInfo.processInfo.environment
         if let raw = environment["DACBAR_HARDWARE_LOCATION_ID"] {
             let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)

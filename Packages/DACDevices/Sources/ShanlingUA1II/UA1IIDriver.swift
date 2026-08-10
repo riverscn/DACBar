@@ -3,61 +3,55 @@ import DACDeviceKit
 
 extension ShanlingUA1II {
 
-    public typealias Driver = DACDeviceKit.Driver
-    public typealias DriverDescriptor = DACDeviceKit.DriverDescriptor
-    public typealias DriverFailure = DACDeviceKit.DriverFailure
-    public typealias Mutation = DACDeviceKit.Mutation
-    public typealias SettingDescriptor = DACDeviceKit.SettingDescriptor
-    public typealias SettingID = DACDeviceKit.SettingID
-    public typealias SettingOption = DACDeviceKit.SettingOption
-    public typealias Snapshot = DACDeviceKit.Snapshot
+    typealias Driver = DACDeviceKit.Driver
+    typealias DriverDescriptor = DACDeviceKit.DriverDescriptor
+    typealias DriverFailure = DACDeviceKit.DriverFailure
+    typealias Mutation = DACDeviceKit.Mutation
+    typealias SettingDescriptor = DACDeviceKit.SettingDescriptor
+    typealias SettingID = DACDeviceKit.SettingID
+    typealias SettingOption = DACDeviceKit.SettingOption
+    typealias Snapshot = DACDeviceKit.Snapshot
 
     /// Semantic UA1 II driver. The existing HID connection remains the
     /// hardware-tested transport/protocol implementation; this adapter keeps
     /// UA1 II wire details out of the app model and UI.
     @MainActor
-    public final class UA1IIDriver: Driver {
-        public let profile: DeviceProfile
-        public let descriptor = DriverDescriptor(
+    final class UA1IIDriver: Driver {
+        let profile: DeviceProfile
+        let descriptor = UA1IIDriver.driverDescriptor
+
+        nonisolated static let driverDescriptor = try! DriverDescriptor(
             settings: UA1IIDriver.settings,
             readback: .complete,
             confirmation: .acknowledgement,
             readRetryDelays: [.milliseconds(600), .seconds(1)],
             writeRetryLimit: 1)
 
-        public var onChange: ((Mutation) -> Void)?
-        public var onConfirmed: ((Mutation) -> Void)?
-        public var onDropped: ((Mutation) -> Void)?
-        public var onRemoved: (() -> Void)?
+        var onChange: ((Mutation) -> Void)?
+        var onConfirmed: ((Mutation) -> Void)?
+        var onDropped: ((Mutation) -> Void)?
+        var onRemoved: (() -> Void)?
 
         private let connection: Connection
 
-        public init(
-            locationID: UInt32,
-            profile: DeviceProfile = ShanlingUA1II.profile
-        ) throws {
-            guard profile.driverID == driverID,
-                  profile.discoveryKind == .hidService,
-                  profile.transportKind == .hidReports else {
-                throw DriverFailure.unsupportedModel(profile.id)
-            }
-            self.profile = profile
-            self.connection = try Connection(locationID: locationID, profile: profile)
+        init(device: Device) throws {
+            self.profile = device.profile
+            self.connection = try Connection(device: device)
             bindConnection()
         }
 
-        public func read() async throws -> Snapshot {
+        func read() async throws -> Snapshot {
             Self.snapshot(from: try await connection.read())
         }
 
-        public func submit(_ mutation: Mutation) async throws {
+        func submit(_ mutation: Mutation) async throws {
             guard let setting = descriptor.settings.first(where: { $0.id == mutation.setting })
             else { throw DriverFailure.unsupportedSetting(mutation.setting) }
             try setting.validate(mutation.value)
             try await connection.submit(try Self.write(from: mutation))
         }
 
-        public func close() {
+        func close() {
             connection.close()
         }
 
@@ -157,7 +151,7 @@ extension ShanlingUA1II {
             return value
         }
 
-        nonisolated public static let settings: [SettingDescriptor] = {
+        nonisolated static let settings: [SettingDescriptor] = {
             let filterNames = [
                 DeviceL10n.text("filter.linear-fast", defaultValue: "Linear phase, fast roll-off"),
                 DeviceL10n.text("filter.linear-slow", defaultValue: "Linear phase, slow roll-off"),

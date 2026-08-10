@@ -48,9 +48,7 @@ final class DeviceModel {
     init(
         watcher: any DeviceWatching = DeviceWatcher(),
         driverFactory: @escaping (AttachedDevice) throws -> any DeviceDriver = {
-            try SupportedDevices.makeDriver(
-                profile: $0.profile,
-                locationID: $0.locationID)
+            try SupportedDevices.makeDriver(for: $0.device)
         }
     ) {
         self.watcher = watcher
@@ -268,6 +266,7 @@ final class DeviceModel {
             for attempt in 0...retryDelays.count {
                 do {
                     let state = try await driver.read()
+                    try driver.descriptor.validate(state)
                     try Task.checkCancellation()
                     guard let self, self.generation == session,
                           self.driver === driver else { return }

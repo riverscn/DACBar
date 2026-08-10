@@ -48,8 +48,8 @@ SupportedDevices composition root
 DeviceRegistry
     ↓ USB/HID identity
 DeviceWatcher → AttachedDevice(profile, location, registry generation)
-                                  ↓
-                             Driver factory
+                                  ↓ complete Device identity
+                       DevicePlugin.makeDriver(for:)
                                   ↓
             DriverDescriptor + Snapshot + Mutation
                                   ↓
@@ -69,7 +69,21 @@ USB/HID 匹配条件、发现方式、传输类型和验证状态。通用核心
 HID watcher 的 matching dictionaries 由注册表生成，并与初始枚举使用同一套条件。
 `AttachedDevice` 携带完整 Profile；选择持久化使用 `profile + locationID`，不会把同一
 端口上的不同型号误认为同一个设备。`registryEntryID` 继续用于识别 USB reset 后的
-新一代 service。
+新一代 service。短暂同时出现旧、新 service 时，枚举只发布较新的 registry generation；
+Driver factory 仍收到发现阶段的完整 `Device`，并在打开 IOHID service 时同时核对 canonical
+Profile、productID、locationID 和 `registryEntryID`。因此旧快照不能只凭相同端口打开新一代
+service，调用方临时构造的同 ID Profile 也不会进入 Driver。
+
+`DeviceRegistry` 在组合时拒绝重复的 `ModelID` / `DriverID`、同一 Profile 内重复的 HID
+signature，以及无法由产品名唯一消歧的跨 Profile signature。共享 VID/PID/HID 描述符仍可
+用于真实存在的不同型号，但它们的规范化产品名必须不重叠。`DriverDescriptor` 同样在 plug-in
+构造时验证 `SettingID`、option ID、range/step 和 retry policy；`DeviceModel` 接收 read
+结果时再验证完整 Snapshot，避免 SwiftUI identity collision、无效 range 和缺字段状态延迟到 UI。
+
+Shanling target 的宿主 API 只保留 `ShanlingUA1II.Plugin` 及预览所需的 setting metadata；
+Connection、wire codec、命令和 concrete Driver 都是模块内部实现。Package 内的协议与真机
+测试继续通过 `@testable import ShanlingUA1II` 访问这些硬件 seam，App 与 App test 则通过
+Plugin 边界创建 Driver。
 
 当前只有 `hidService` discovery backend。若某个型号只暴露 endpoint-zero vendor
 control 或非 HID 接口，应新增独立的 USB registry discovery backend，而不是放宽
@@ -123,6 +137,12 @@ App 与 Driver 分别持有自己的 String Catalog；Driver 先把本地化后�
 Driver 目前为 `@MainActor`，因为 UA1 II 的 IOHID callback 与 AppKit event-tracking
 run loop 已按此模型完成真机验证。纯编码、解码和能力表显式 `nonisolated`，不会把
 不需要 UI actor 的计算错误地扩大隔离范围。
+
+`DevicePlugin.devices()` 当前也保留同步 `@MainActor` contract：已发布的唯一 backend 只是
+一次有界的 `IOHIDManagerCopyDevices` snapshot，改成 async 不会改善现有生命周期，反而会
+扩大 App watcher 与测试的兼容面。这个边界不是未来 backend 可以阻塞主线程的许可；若后续
+发现方式需要等待、轮询或持续流，届时应新增独立的 async discovery backend/stream，并让
+现有同步方法只承担兼容 snapshot，而不是把 speculative task/queue 基础设施提前放入核心。
 
 发布 App 为 Universal 2（`arm64 + x86_64`）。标准 GitHub-hosted `xcode-27` ARM64
 runner 是 Swift 6.4 源码测试与唯一构建环境，并逐个检查 App 与 Sparkle 嵌套可执行文件的

@@ -17,6 +17,15 @@ struct AttachedDevice: Identifiable, Equatable {
         DACDeviceKit.Device.ID(model: profile.id, locationID: locationID)
     }
 
+    var device: DACDeviceKit.Device {
+        DACDeviceKit.Device(
+            profile: profile,
+            productID: productID,
+            locationID: locationID,
+            registryEntryID: registryEntryID,
+            name: name)
+    }
+
     var persistedSelection: String {
         "\(profile.id.rawValue):\(locationID)"
     }
