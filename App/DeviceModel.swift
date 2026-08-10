@@ -5,6 +5,19 @@ import DACDeviceKit
 
 typealias DeviceDriver = DACDeviceKit.Driver
 
+private enum DeviceModelFailure: LocalizedError {
+    case invalidSnapshot
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidSnapshot:
+            return AppL10n.text(
+                "error.invalid-snapshot",
+                defaultValue: "The device returned an incomplete state.")
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class DeviceModel {
@@ -18,7 +31,7 @@ final class DeviceModel {
     }
 
     private(set) var confirmed = DACDeviceKit.Snapshot()
-    var draft = DACDeviceKit.Snapshot()
+    private(set) var draft = DACDeviceKit.Snapshot()
     private(set) var phase: Phase = .disconnected
     private(set) var devices: [AttachedDevice] = []
     private(set) var selected: AttachedDevice?
@@ -29,9 +42,7 @@ final class DeviceModel {
 
     private static let logger = Logger(
         subsystem: AppIdentity.bundleIdentifier, category: "device-model")
-    private static let selectionKey = "selectedDeviceIdentity"
-    private static let legacySelectionKey = "selectedLocationID"
-
+    @ObservationIgnored private let selectionStore: DeviceSelectionStore
     @ObservationIgnored private let watcher: any DeviceWatching
     @ObservationIgnored private let driverFactory:
         (AttachedDevice) throws -> any DeviceDriver
@@ -46,19 +57,15 @@ final class DeviceModel {
     @ObservationIgnored private var generation = 0
 
     init(
+        selectionStore: DeviceSelectionStore,
         watcher: any DeviceWatching = DeviceWatcher(),
         driverFactory: @escaping (AttachedDevice) throws -> any DeviceDriver = {
             try SupportedDevices.makeDriver(for: $0.device)
         }
     ) {
+        self.selectionStore = selectionStore
         self.watcher = watcher
         self.driverFactory = driverFactory
-
-        // DACBAR_FORCE_STATUS lays out the panel without hardware.
-        if let forced = ProcessInfo.processInfo.environment["DACBAR_FORCE_STATUS"] {
-            applyMock(forced)
-            return
-        }
 
         watcher.onChange = { [weak self] devices in
             self?.devicesDidChange(to: devices)
@@ -90,44 +97,6 @@ final class DeviceModel {
         watcher.stop()
     }
 
-    private func applyMock(_ forced: String) {
-        let profile = SupportedDevices.previewProfile
-        let first = AttachedDevice(
-            profile: profile,
-            productID: profile.hidMatches[0].productID,
-            locationID: 0x0110_0000,
-            registryEntryID: 1,
-            name: profile.displayName,
-            portPath: "1-1")
-        let second = AttachedDevice(
-            profile: profile,
-            productID: profile.hidMatches[0].productID,
-            locationID: 0x0210_0000,
-            registryEntryID: 2,
-            name: profile.displayName,
-            portPath: "2-1")
-        devices = forced == "twoDevices" ? [first, second] : [first]
-        selected = devices.first
-        settings = SupportedDevices.previewSettings
-        let mock = DACDeviceKit.Snapshot(
-            valid: true,
-            values: [
-                .volume: 27,
-                .gain: 0,
-                .filter: 1,
-                .balance: -3,
-                .brightness: 6,
-                .screenTimeout: 30,
-                .orientation: 0,
-                .screenOffset: 2,
-            ],
-            firmware: "01.00.00")
-        confirmed = mock
-        sent = mock
-        draft = mock
-        phase = .ready
-    }
-
     // MARK: - Device presence
 
     private func devicesDidChange(to list: [AttachedDevice]) {
@@ -150,24 +119,13 @@ final class DeviceModel {
            let current = list.first(where: { $0.id == selected.id }) {
             return current
         }
-        let remembered = UserDefaults.standard.string(forKey: Self.selectionKey)
-        if let remembered,
-           let match = list.first(where: { $0.persistedSelection == remembered }) {
-            return match
-        }
-        // One-time compatibility with releases that persisted only the port.
-        let legacy = UserDefaults.standard.object(forKey: Self.legacySelectionKey) as? Int
-        if let legacy,
-           let match = list.first(where: {
-               $0.locationID == UInt32(truncatingIfNeeded: legacy)
-           }) { return match }
-        return list.first
+        return selectionStore.selectedDevice(in: list) ?? list.first
     }
 
     func select(_ device: AttachedDevice) {
         guard device != selected else { return }
         selected = device
-        UserDefaults.standard.set(device.persistedSelection, forKey: Self.selectionKey)
+        selectionStore.save(device)
         connect(to: device)
     }
 
@@ -175,7 +133,7 @@ final class DeviceModel {
         invalidateSession(resetState: true)
         phase = .connecting
         let session = generation
-        UserDefaults.standard.set(device.persistedSelection, forKey: Self.selectionKey)
+        selectionStore.save(device)
 
         do {
             let opened = try driverFactory(device)
@@ -275,6 +233,9 @@ final class DeviceModel {
                         self.refreshTask = nil
                         return
                     }
+                    guard state.valid else {
+                        throw DeviceModelFailure.invalidSnapshot
+                    }
                     self.confirmed = state
                     self.sent = state
                     self.draft = state
@@ -367,12 +328,18 @@ final class DeviceModel {
         draft.textValues[setting]
     }
 
-    func updateDraft(_ setting: DACDeviceKit.SettingID, value: Int) {
-        guard let descriptor = settings.first(where: { $0.id == setting }),
-              (try? descriptor.validate(value)) != nil
-        else { return }
+    /// Validates and queues one complete state transition. Callers cannot leave
+    /// the model with a mutated draft that was never scheduled for the driver.
+    @discardableResult
+    func update(_ setting: DACDeviceKit.SettingID, to value: Int) -> Bool {
+        guard isReady, let driver,
+              let descriptor = settings.first(where: { $0.id == setting }),
+              (try? descriptor.validate(value)) != nil,
+              draft[setting] != value
+        else { return false }
         draft[setting] = value
-        scheduleApply()
+        scheduleApply(with: driver)
+        return true
     }
 
     /// Moves the selected DAC by logical volume steps. Global shortcuts use
@@ -408,12 +375,10 @@ final class DeviceModel {
         guard target != current, (try? descriptor.validate(target)) != nil else {
             return false
         }
-        updateDraft(.volume, value: target)
-        return true
+        return update(.volume, to: target)
     }
 
-    func scheduleApply() {
-        guard isReady, let driver else { return }
+    private func scheduleApply(with driver: any DeviceDriver) {
         guard sent != draft else { return }
         pendingWrite = draft
         startWriteTaskIfNeeded(driver: driver, session: generation)

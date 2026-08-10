@@ -9,7 +9,8 @@ struct DACBarApp: App {
     @State private var launchAtLogin: LaunchAtLoginController
 
     init() {
-        let model = DeviceModel()
+        let model = DeviceModel(
+            selectionStore: DeviceSelectionStore(defaults: .standard))
         _model = State(initialValue: model)
         _updates = State(initialValue: UpdateController())
         _launchAtLogin = State(initialValue: LaunchAtLoginController())
