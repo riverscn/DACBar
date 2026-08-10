@@ -34,6 +34,48 @@ struct HotKeyShortcutTests {
         #expect(decoded == shortcut)
     }
 
+    @Test("Registration identity ignores the layout-derived label")
+    func registrationIdentityIgnoresLabel() {
+        let qwerty = HotKeyShortcut(
+            keyCode: 0,
+            modifiers: [.control, .command],
+            keyLabel: "A")
+        let dvorak = HotKeyShortcut(
+            keyCode: 0,
+            modifiers: [.control, .command],
+            keyLabel: "Q")
+
+        #expect(qwerty != dvorak)
+        #expect(qwerty.registrationIdentity == dvorak.registrationIdentity)
+    }
+
+    @MainActor
+    @Test("Controller rejects duplicate physical hotkeys across layouts")
+    func duplicateRegistrationAcrossLayouts() {
+        let suiteName = "DACBarTests.hotkeys.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let controller = GlobalHotKeyController(defaults: defaults) { _ in }
+        controller.beginShortcutRecording()
+        controller.setShortcut(
+            HotKeyShortcut(
+                keyCode: 0,
+                modifiers: [.control, .command],
+                keyLabel: "A"),
+            for: .increase)
+        controller.setShortcut(
+            HotKeyShortcut(
+                keyCode: 0,
+                modifiers: [.control, .command],
+                keyLabel: "Q"),
+            for: .decrease)
+        controller.setEnabled(true)
+        controller.endShortcutRecording()
+
+        #expect(controller.status == .duplicate)
+    }
+
     @MainActor
     @Test("Global registration stays suspended across overlapping recorders")
     func recordingSuspensionIsBalanced() {

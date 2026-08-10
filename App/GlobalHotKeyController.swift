@@ -127,12 +127,12 @@ final class GlobalHotKeyController {
             status = .suspended
             return
         }
-        guard handlerInstallationResult == noErr else {
-            status = .failed(handlerInstallationResult)
+        guard volumeUp.registrationIdentity != volumeDown.registrationIdentity else {
+            status = .duplicate
             return
         }
-        guard volumeUp != volumeDown else {
-            status = .duplicate
+        guard handlerInstallationResult == noErr else {
+            status = .failed(handlerInstallationResult)
             return
         }
 

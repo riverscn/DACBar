@@ -33,6 +33,11 @@ struct HotKeyModifiers: OptionSet, Codable, Hashable, Sendable {
 }
 
 struct HotKeyShortcut: Codable, Equatable, Sendable {
+    struct RegistrationIdentity: Hashable, Sendable {
+        let keyCode: UInt32
+        let modifiers: HotKeyModifiers
+    }
+
     // Hardware key codes make the shortcut stable when the active keyboard
     // layout changes. keyLabel is presentation metadata captured alongside it.
     let keyCode: UInt32
@@ -45,6 +50,12 @@ struct HotKeyShortcut: Codable, Equatable, Sendable {
         keyCode: 125, modifiers: [.control, .command], keyLabel: "↓")
 
     var displayName: String { modifiers.symbolPrefix + keyLabel }
+
+    /// Carbon registers a physical key plus modifiers. The label only records
+    /// how that key was presented under the keyboard layout active at capture.
+    var registrationIdentity: RegistrationIdentity {
+        RegistrationIdentity(keyCode: keyCode, modifiers: modifiers)
+    }
 
     /// Requiring two modifiers avoids hijacking ordinary typing and the most
     /// common one-modifier application shortcuts. Command or Control is also
