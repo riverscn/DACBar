@@ -53,9 +53,6 @@ jobs:
             exit 1
           fi
 
-          VERSION=$(./scripts/read-version.sh Distribution)
-          [[ "$GITHUB_REF_NAME" = "v$VERSION" ]]
-
   source-tests:
     name: Xcode 27 release tests
     needs: release-trust
@@ -73,6 +70,11 @@ jobs:
           xcodebuild -version | grep -q '^Xcode 27\.'
           swift --version | grep -q 'Swift version 6\.4'
           test "$(uname -m)" = arm64
+
+      - name: Verify tag matches the authoritative Xcode marketing version
+        run: |
+          VERSION=$(./scripts/read-version.sh Distribution)
+          test "$GITHUB_REF_NAME" = "v$VERSION"
 
       - name: Test with complete concurrency checking
         run: >-
@@ -154,6 +156,11 @@ jobs:
               missing=1
             fi
           done
+          if [ -n "${DSYM_ARCHIVE_PASSWORD:-}" ] \
+              && [ "${#DSYM_ARCHIVE_PASSWORD}" -lt 32 ]; then
+            echo "::error::DSYM_ARCHIVE_PASSWORD must contain at least 32 characters"
+            missing=1
+          fi
           exit "$missing"
 
       - name: Import Developer ID certificate

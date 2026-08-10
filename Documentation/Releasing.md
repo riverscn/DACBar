@@ -90,7 +90,9 @@ security find-identity -v -p codesigning | grep 'Developer ID Application'
 远端重新获取 `origin/main` 后用 `git merge-base --is-ancestor` 验证包含关系。这里使用 GitHub
 托管的签名验证结果，是因为一次性 runner 并没有维护者的 GPG/SSH trust material；直接运行
 `git tag -v` 会因为缺少可信公钥而成为不可工作的伪门禁。轻量 tag、GitHub 未验证的 tag、
-间接 tag 和 main 之外的 commit 都会失败。
+间接 tag 和 main 之外的 commit 都会失败。随后仍不接触 environment 或 secrets 的
+`source-tests` job 在 `xcode-27` 上通过 Xcode build settings 解析权威版本，并要求 tag 等于
+`v$VERSION`；这个 Xcode 依赖的检查不能放在 Ubuntu trust job。
 
 `scripts/configure-release.sh` 只会确认 `release-signing` 已存在并向其中写入 secret/variable；
 它有意**不会**创建或修改 environment、reviewer、deployment policy 或 ruleset，也不能宣称
