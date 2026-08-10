@@ -38,6 +38,7 @@
 		20000000000000000000001D /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000013 /* LaunchAtLoginController.swift */; };
 		20000000000000000000001E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000014 /* SettingsView.swift */; };
 		20000000000000000000001F /* HotKeyShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000004 /* HotKeyShortcutTests.swift */; };
+		200000000000000000000020 /* DeviceWatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000005 /* DeviceWatcherTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +82,7 @@
 		130000000000000000000002 /* HardwareDeviceModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareDeviceModelTests.swift; sourceTree = "<group>"; };
 		130000000000000000000003 /* UpdateControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateControllerTests.swift; sourceTree = "<group>"; };
 		130000000000000000000004 /* HotKeyShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyShortcutTests.swift; sourceTree = "<group>"; };
+		130000000000000000000005 /* DeviceWatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceWatcherTests.swift; sourceTree = "<group>"; };
 		140000000000000000000001 /* DACBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DACBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		140000000000000000000002 /* DACBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DACBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -163,6 +165,7 @@
 				130000000000000000000002 /* HardwareDeviceModelTests.swift */,
 				130000000000000000000003 /* UpdateControllerTests.swift */,
 				130000000000000000000004 /* HotKeyShortcutTests.swift */,
+				130000000000000000000005 /* DeviceWatcherTests.swift */,
 			);
 			path = DACBarTests;
 			sourceTree = "<group>";
@@ -324,6 +327,7 @@
 				200000000000000000000015 /* HardwareDeviceModelTests.swift in Sources */,
 				200000000000000000000016 /* UpdateControllerTests.swift in Sources */,
 				20000000000000000000001F /* HotKeyShortcutTests.swift in Sources */,
+				200000000000000000000020 /* DeviceWatcherTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

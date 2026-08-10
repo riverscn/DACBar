@@ -6,6 +6,128 @@ import OSLog
 import DACDeviceKit
 
 @MainActor
+protocol DeviceWatcherSettleCancellation: AnyObject {
+    func cancel()
+}
+
+@MainActor
+private final class LiveDeviceWatcherSettle: DeviceWatcherSettleCancellation {
+    private static let logger = Logger(
+        subsystem: AppIdentity.bundleIdentifier, category: "device-watcher")
+    private let task: Task<Void, Never>
+
+    init(operation: @escaping @MainActor @Sendable () -> Void) {
+        task = Task { @MainActor in
+            do {
+                try await Task.sleep(for: .milliseconds(400))
+                operation()
+            } catch is CancellationError {
+                return
+            } catch {
+                Self.logger.error(
+                    "Removal settle failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    func cancel() {
+        task.cancel()
+    }
+}
+
+@MainActor
+struct DeviceWatcherPlatform {
+    let createManager: () -> IOHIDManager
+    let configureMatching: (IOHIDManager) -> Void
+    let installCallbacks: (
+        IOHIDManager,
+        @escaping @MainActor @Sendable (IOReturn) -> Void,
+        @escaping @MainActor @Sendable (IOReturn) -> Void
+    ) -> AnyObject
+    let clearCallbacks: (IOHIDManager) -> Void
+    let open: (IOHIDManager) -> IOReturn
+    let currentRunLoop: () -> CFRunLoop?
+    let addEventTrackingMode: (CFRunLoop) -> Void
+    let schedule: (IOHIDManager, CFRunLoop) -> Void
+    let unschedule: (IOHIDManager, CFRunLoop) -> Void
+    let close: (IOHIDManager) -> Void
+    let probe: () throws -> [AttachedDevice]
+    let scheduleRemovalSettle:
+        (@escaping @MainActor @Sendable () -> Void) -> any DeviceWatcherSettleCancellation
+
+    static let live = DeviceWatcherPlatform(
+        createManager: {
+            IOHIDManagerCreate(
+                kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
+        },
+        configureMatching: {
+            IOHIDManagerSetDeviceMatchingMultiple(
+                $0, SupportedDevices.hidMatchingDictionaries())
+        },
+        installCallbacks: { manager, matched, removed in
+            let context = DeviceWatcherCallbackContext(
+                matched: matched, removed: removed)
+            let pointer = Unmanaged.passUnretained(context).toOpaque()
+            IOHIDManagerRegisterDeviceMatchingCallback(
+                manager, deviceWatcherMatchedCallback, pointer)
+            IOHIDManagerRegisterDeviceRemovalCallback(
+                manager, deviceWatcherRemovedCallback, pointer)
+            return context
+        },
+        clearCallbacks: {
+            IOHIDManagerRegisterDeviceMatchingCallback($0, nil, nil)
+            IOHIDManagerRegisterDeviceRemovalCallback($0, nil, nil)
+        },
+        open: { IOHIDManagerOpen($0, 0) },
+        currentRunLoop: { CFRunLoopGetCurrent() },
+        addEventTrackingMode: {
+            CFRunLoopAddCommonMode(
+                $0,
+                CFRunLoopMode(rawValue: "NSEventTrackingRunLoopMode" as CFString))
+        },
+        schedule: {
+            IOHIDManagerScheduleWithRunLoop(
+                $0, $1, CFRunLoopMode.commonModes.rawValue)
+        },
+        unschedule: {
+            IOHIDManagerUnscheduleFromRunLoop(
+                $0, $1, CFRunLoopMode.commonModes.rawValue)
+        },
+        close: { IOHIDManagerClose($0, 0) },
+        probe: { try SupportedDevices.devices().map(AttachedDevice.init) },
+        scheduleRemovalSettle: { LiveDeviceWatcherSettle(operation: $0) })
+}
+
+private final class DeviceWatcherCallbackContext: @unchecked Sendable {
+    let matched: @MainActor @Sendable (IOReturn) -> Void
+    let removed: @MainActor @Sendable (IOReturn) -> Void
+
+    init(
+        matched: @escaping @MainActor @Sendable (IOReturn) -> Void,
+        removed: @escaping @MainActor @Sendable (IOReturn) -> Void
+    ) {
+        self.matched = matched
+        self.removed = removed
+    }
+}
+
+nonisolated private let deviceWatcherMatchedCallback: IOHIDDeviceCallback = {
+    context, result, _, _ in
+    guard let context else { return }
+    let callback = Unmanaged<DeviceWatcherCallbackContext>
+        .fromOpaque(context).takeUnretainedValue().matched
+    MainActor.assumeIsolated { callback(result) }
+}
+
+nonisolated private let deviceWatcherRemovedCallback: IOHIDDeviceCallback = {
+    context, result, _, _ in
+    guard let context else { return }
+    let callback = Unmanaged<DeviceWatcherCallbackContext>
+        .fromOpaque(context).takeUnretainedValue().removed
+    MainActor.assumeIsolated { callback(result) }
+}
+
+@MainActor
 protocol DeviceWatching: AnyObject {
     var devices: [AttachedDevice] { get }
     var onChange: (([AttachedDevice]) -> Void)? { get set }
@@ -41,51 +163,51 @@ final class DeviceWatcher: DeviceWatching {
 
     private static let logger = Logger(
         subsystem: AppIdentity.bundleIdentifier, category: "device-watcher")
-    private static let eventTrackingRunLoopMode = CFRunLoopMode(
-        rawValue: "NSEventTrackingRunLoopMode" as CFString)
-
     private(set) var devices: [AttachedDevice] = []
 
     var isPresent: Bool { !devices.isEmpty }
     var onChange: (([AttachedDevice]) -> Void)?
     var onFailure: ((String) -> Void)?
 
+    private let platform: DeviceWatcherPlatform
     private var manager: IOHIDManager?
     private var runLoop: CFRunLoop?
-    private var settle: Task<Void, Never>?
+    private var callbackToken: AnyObject?
+    private var settle: (any DeviceWatcherSettleCancellation)?
+
+    init(platform: DeviceWatcherPlatform = .live) {
+        self.platform = platform
+    }
 
     // MARK: - Lifecycle
 
     func start() throws {
         guard manager == nil else { return }
 
-        let created = IOHIDManagerCreate(
-            kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
-        IOHIDManagerSetDeviceMatchingMultiple(
-            created, SupportedDevices.hidMatchingDictionaries())
-        let context = Unmanaged.passUnretained(self).toOpaque()
-        IOHIDManagerRegisterDeviceMatchingCallback(
-            created, Self.matchedCallback, context)
-        IOHIDManagerRegisterDeviceRemovalCallback(
-            created, Self.removedCallback, context)
+        let created = platform.createManager()
+        platform.configureMatching(created)
+        callbackToken = platform.installCallbacks(
+            created,
+            { [weak self] result in self?.receivedMatch(result) },
+            { [weak self] result in self?.receivedRemoval(result) })
+        manager = created
 
-        let openResult = IOHIDManagerOpen(created, 0)
+        let openResult = platform.open(created)
         guard openResult == kIOReturnSuccess else {
+            stop()
             throw DeviceWatcherFailure.managerOpen(openResult)
         }
 
-        guard let currentRunLoop = CFRunLoopGetCurrent() else {
-            IOHIDManagerClose(created, 0)
+        guard let currentRunLoop = platform.currentRunLoop() else {
+            stop()
             throw DeviceWatcherFailure.runLoop
         }
-        CFRunLoopAddCommonMode(currentRunLoop, Self.eventTrackingRunLoopMode)
-        IOHIDManagerScheduleWithRunLoop(
-            created, currentRunLoop, CFRunLoopMode.commonModes.rawValue)
-        manager = created
+        platform.addEventTrackingMode(currentRunLoop)
+        platform.schedule(created, currentRunLoop)
         runLoop = currentRunLoop
 
         do {
-            devices = try Self.probe()
+            devices = try platform.probe()
             Self.logger.info(
                 "HID watcher started with \(self.devices.count, privacy: .public) device(s)")
         } catch {
@@ -99,13 +221,12 @@ final class DeviceWatcher: DeviceWatching {
         settle = nil
         guard let manager else { return }
 
-        IOHIDManagerRegisterDeviceMatchingCallback(manager, nil, nil)
-        IOHIDManagerRegisterDeviceRemovalCallback(manager, nil, nil)
+        platform.clearCallbacks(manager)
+        callbackToken = nil
         if let runLoop {
-            IOHIDManagerUnscheduleFromRunLoop(
-                manager, runLoop, CFRunLoopMode.commonModes.rawValue)
+            platform.unschedule(manager, runLoop)
         }
-        IOHIDManagerClose(manager, 0)
+        platform.close(manager)
         self.manager = nil
         runLoop = nil
     }
@@ -123,38 +244,26 @@ final class DeviceWatcher: DeviceWatching {
     }
 
     func probe() throws -> [AttachedDevice] {
-        try Self.probe()
-    }
-
-    private static let matchedCallback: IOHIDDeviceCallback = {
-        context, result, _, _ in
-        guard let context else { return }
-        let watcher = Unmanaged<DeviceWatcher>
-            .fromOpaque(context).takeUnretainedValue()
-        MainActor.assumeIsolated {
-            guard result == kIOReturnSuccess else {
-                watcher.reportCallbackFailure(result)
-                return
-            }
-            watcher.deviceMatched()
-        }
-    }
-
-    private static let removedCallback: IOHIDDeviceCallback = {
-        context, result, _, _ in
-        guard let context else { return }
-        let watcher = Unmanaged<DeviceWatcher>
-            .fromOpaque(context).takeUnretainedValue()
-        MainActor.assumeIsolated {
-            guard result == kIOReturnSuccess else {
-                watcher.reportCallbackFailure(result)
-                return
-            }
-            watcher.deviceRemoved()
-        }
+        try platform.probe()
     }
 
     // MARK: - Passive events
+
+    private func receivedMatch(_ result: IOReturn) {
+        guard result == kIOReturnSuccess else {
+            reportCallbackFailure(result)
+            return
+        }
+        deviceMatched()
+    }
+
+    private func receivedRemoval(_ result: IOReturn) {
+        guard result == kIOReturnSuccess else {
+            reportCallbackFailure(result)
+            return
+        }
+        deviceRemoved()
+    }
 
     private func deviceMatched() {
         settle?.cancel()
@@ -171,24 +280,16 @@ final class DeviceWatcher: DeviceWatching {
         // The callback can precede final registry teardown. One delayed
         // coalescing read is event-driven—not polling—and ensures the old
         // service has disappeared before publishing the settled snapshot.
-        settle = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(for: .milliseconds(400))
-                guard let self else { return }
-                self.settle = nil
-                self.refresh(reason: "settled removal")
-            } catch is CancellationError {
-                return
-            } catch {
-                Self.logger.error(
-                    "Removal settle failed: \(error.localizedDescription)")
-            }
+        settle = platform.scheduleRemovalSettle { [weak self] in
+            guard let self else { return }
+            self.settle = nil
+            self.refresh(reason: "settled removal")
         }
     }
 
     private func refresh(reason: String) {
         do {
-            publish(try Self.probe(), reason: reason)
+            publish(try platform.probe(), reason: reason)
         } catch {
             Self.logger.error("Device probe failed: \(error.localizedDescription)")
             onFailure?(error.localizedDescription)
