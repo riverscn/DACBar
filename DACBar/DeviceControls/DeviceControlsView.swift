@@ -198,7 +198,7 @@ private struct SettingOptionsRow: View {
     let onChange: (Int) -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: SettingRowMetrics.labelGutter) {
             HStack(spacing: 4) {
                 SettingRowLabel(setting: setting)
                 if let explainer {
@@ -263,14 +263,15 @@ private struct SettingToggleRow: View {
     let onChange: (Bool) -> Void
 
     var body: some View {
-        Toggle(
-            isOn: Binding(get: { value }, set: { onChange($0) }),
-            label: {
-                SettingRowLabel(setting: setting)
-            })
-        .toggleStyle(.switch)
-        .controlSize(.small)
-        .settingRow()
+        SettingRow(setting: setting) {
+            Toggle(
+                isOn: Binding(get: { value }, set: { onChange($0) }),
+                label: { EmptyView() })
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .labelsHidden()
+                .accessibilityLabel(setting.title)
+        }
     }
 }
 
@@ -279,12 +280,11 @@ private struct SettingReadOnlyRow: View {
     let value: String
 
     var body: some View {
-        LabeledContent {
-            Text(value).foregroundStyle(.secondary)
-        } label: {
-            SettingRowLabel(setting: setting)
+        SettingRow(setting: setting) {
+            Text(value)
+                .font(SettingRowMetrics.titleFont)
+                .foregroundStyle(.secondary)
         }
-        .settingRow()
     }
 }
 
@@ -294,15 +294,16 @@ private struct SettingColorRow: View {
     let onChange: (Int) -> Void
 
     var body: some View {
-        ColorPicker(
-            selection: Binding(
-                get: { value.color },
-                set: { onChange($0.packedRGB) }),
-            supportsOpacity: false,
-            label: {
-                SettingRowLabel(setting: setting)
-            })
-        .settingRow()
+        SettingRow(setting: setting) {
+            ColorPicker(
+                selection: Binding(
+                    get: { value.color },
+                    set: { onChange($0.packedRGB) }),
+                supportsOpacity: false,
+                label: { EmptyView() })
+                .labelsHidden()
+                .accessibilityLabel(setting.title)
+        }
     }
 }
 
