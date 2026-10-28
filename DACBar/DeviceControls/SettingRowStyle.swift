@@ -26,6 +26,10 @@ private struct SettingRowLabelStyle: LabelStyle {
             configuration.icon
                 .frame(width: SettingRowMetrics.iconWidth)
             configuration.title
+                // A segmented picker's minimum width is large enough to fold a
+                // four-character title onto two lines. The title is the thing
+                // being read, so it keeps its width and the control gives way.
+                .fixedSize(horizontal: true, vertical: false)
         }
     }
 }
