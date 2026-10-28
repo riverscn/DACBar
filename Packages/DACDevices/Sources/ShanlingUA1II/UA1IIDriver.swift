@@ -183,7 +183,7 @@ extension ShanlingUA1II {
                     id: .gain,
                     title: DeviceL10n.text("settings.gain", defaultValue: "Gain"),
                     systemImage: "dial.high", group: .audio,
-                    presentation: .segmented([
+                    presentation: .options([
                         SettingOption(value: 0, label: DeviceL10n.text("settings.gain.low", defaultValue: "Low")),
                         SettingOption(value: 1, label: DeviceL10n.text("settings.gain.high", defaultValue: "High")),
                     ])),
@@ -191,7 +191,7 @@ extension ShanlingUA1II {
                     id: .filter,
                     title: DeviceL10n.text("settings.filter", defaultValue: "Filter"),
                     systemImage: "waveform", group: .audio,
-                    presentation: .menu(filterOptions), explanation: filterExplanation),
+                    presentation: .options(filterOptions), explanation: filterExplanation),
                 SettingDescriptor(
                     id: .balance,
                     title: DeviceL10n.text("settings.balance", defaultValue: "Balance"),
@@ -208,7 +208,7 @@ extension ShanlingUA1II {
                     title: DeviceL10n.text("settings.orientation", defaultValue: "Orientation"),
                     systemImage: "arrow.clockwise",
                     group: .display,
-                    presentation: .segmented(
+                    presentation: .options(
                         ["0°", "90°", "180°", "270°"].enumerated().map {
                             SettingOption(value: $0.offset, label: $0.element)
                         })),
@@ -216,7 +216,7 @@ extension ShanlingUA1II {
                     id: .screenTimeout,
                     title: DeviceL10n.text("settings.screen-timeout", defaultValue: "Screen timeout"),
                     systemImage: "clock", group: .display,
-                    presentation: .menu(
+                    presentation: .options(
                         [0, 10, 20, 30, 40, 50, 60].map {
                             SettingOption(
                                 value: $0,

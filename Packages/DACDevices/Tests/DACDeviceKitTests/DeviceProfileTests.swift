@@ -128,7 +128,7 @@ struct DeviceProfileTests {
             presentation: .range(minimum: 0, maximum: 99, step: 1, format: .number))
         let duplicateOptions = descriptor(
             id: .filter,
-            presentation: .menu([
+            presentation: .options([
                 DACDeviceKit.SettingOption(value: 0, label: "A"),
                 DACDeviceKit.SettingOption(value: 0, label: "B"),
             ]))

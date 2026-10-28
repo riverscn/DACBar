@@ -120,22 +120,12 @@ private struct DeviceSettingRow: View {
                     formattedValue: format.string(for: value),
                     onChange: onChange)
             }
-        case .segmented(let options):
+        case .options(let options):
             if let value {
                 SettingOptionsRow(
                     setting: setting,
                     value: value,
                     options: options,
-                    style: .segmented,
-                    onChange: onChange)
-            }
-        case .menu(let options):
-            if let value {
-                SettingOptionsRow(
-                    setting: setting,
-                    value: value,
-                    options: options,
-                    style: .menu,
                     onChange: onChange)
             }
         case .toggle:
@@ -189,12 +179,9 @@ private struct SettingSliderRow: View {
 }
 
 private struct SettingOptionsRow: View {
-    enum Style { case segmented, menu }
-
     let setting: DACDeviceKit.SettingDescriptor
     let value: Int
     let options: [DACDeviceKit.SettingOption]
-    let style: Style
     let onChange: (Int) -> Void
 
     var body: some View {
@@ -214,14 +201,16 @@ private struct SettingOptionsRow: View {
         .settingRow()
     }
 
-    @ViewBuilder
+    /// A segmented control shows every option at once, which is worth the
+    /// width when the options are few and short. Once they are not, the same
+    /// choice has to become a pop-up button or it squeezes the title and its
+    /// own labels. Asking the layout whether the segments fit decides that per
+    /// row and per panel width, instead of each driver guessing.
     private var picker: some View {
-        switch style {
-        case .segmented:
+        ViewThatFits(in: .horizontal) {
             basePicker
                 .pickerStyle(.segmented)
                 .labelsHidden()
-        case .menu:
             basePicker
                 .pickerStyle(.menu)
                 .labelsHidden()

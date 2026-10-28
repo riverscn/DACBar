@@ -93,7 +93,7 @@ enum PreviewDevices {
             title: "Gain mode",
             systemImage: "dial.high",
             group: .audio,
-            presentation: .segmented([
+            presentation: .options([
                 SettingOption(value: 0, label: "Low"),
                 SettingOption(value: 1, label: "Mid"),
                 SettingOption(value: 2, label: "High"),
@@ -103,7 +103,7 @@ enum PreviewDevices {
             title: "Digital filter",
             systemImage: "waveform",
             group: .audio,
-            presentation: .menu([
+            presentation: .options([
                 SettingOption(value: 0, label: "Sharp", note: "Steepest roll-off."),
                 SettingOption(value: 1, label: "Slow", note: "Gentler, less pre-ringing."),
                 SettingOption(value: 2, label: "NOS", note: "No oversampling."),
@@ -114,7 +114,7 @@ enum PreviewDevices {
             title: "Output",
             systemImage: "cable.connector",
             group: .audio,
-            presentation: .segmented([
+            presentation: .options([
                 SettingOption(value: 0, label: "3.5 mm"),
                 SettingOption(value: 1, label: "4.4 mm"),
             ])),
@@ -170,7 +170,7 @@ enum PreviewDevices {
         switch setting.presentation {
         case .range(let minimum, let maximum, let step, _):
             return minimum + step * (((maximum - minimum) / step) / 2)
-        case .segmented(let options), .menu(let options):
+        case .options(let options):
             return options.first?.value
         case .toggle:
             return 0
