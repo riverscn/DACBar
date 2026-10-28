@@ -257,7 +257,10 @@ private struct SettingToggleRow: View {
                 isOn: Binding(get: { value }, set: { onChange($0) }),
                 label: { EmptyView() })
                 .toggleStyle(.switch)
-                .controlSize(.small)
+                // Apple's guidance for a switch that controls a single row in
+                // a grouped form: the mini size is close to the height of the
+                // pickers and read-outs beside it, so rows stay even.
+                .controlSize(.mini)
                 .labelsHidden()
                 .accessibilityLabel(setting.title)
         }
