@@ -13,7 +13,7 @@ struct PreviewFixtureTests {
 
     @Test("Every fixture is a complete read the model can reach ready on")
     func fixturesSatisfyTheDriverContract() async throws {
-        for fixture in [PreviewDevices.shanlingUA1II, PreviewDevices.secondModel] {
+        for fixture in [PreviewDevices.shanlingUA1II, PreviewDevices.tonfa, PreviewDevices.secondModel] {
             let driver = try PreviewDriver(fixture: fixture)
             try driver.descriptor.validate(try await driver.read())
 
