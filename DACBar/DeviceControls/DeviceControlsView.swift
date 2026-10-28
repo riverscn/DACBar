@@ -120,22 +120,12 @@ private struct DeviceSettingRow: View {
                     formattedValue: format.string(for: value),
                     onChange: onChange)
             }
-        case .segmented(let options):
+        case .options(let options):
             if let value {
                 SettingOptionsRow(
                     setting: setting,
                     value: value,
                     options: options,
-                    style: .segmented,
-                    onChange: onChange)
-            }
-        case .menu(let options):
-            if let value {
-                SettingOptionsRow(
-                    setting: setting,
-                    value: value,
-                    options: options,
-                    style: .menu,
                     onChange: onChange)
             }
         case .toggle:
@@ -167,9 +157,7 @@ private struct SettingSliderRow: View {
     var body: some View {
         VStack(spacing: 3) {
             HStack(spacing: 6) {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
+                SettingRowLabel(setting: setting)
                 Spacer()
                 Text(formattedValue)
                     .font(.callout.monospacedDigit())
@@ -186,46 +174,43 @@ private struct SettingSliderRow: View {
             .labelsHidden()
             .accessibilityValue(formattedValue)
         }
-        .padding(.vertical, 4)
+        .settingRow()
     }
 }
 
 private struct SettingOptionsRow: View {
-    enum Style { case segmented, menu }
-
     let setting: DACDeviceKit.SettingDescriptor
     let value: Int
     let options: [DACDeviceKit.SettingOption]
-    let style: Style
     let onChange: (Int) -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: SettingRowMetrics.labelGutter) {
             HStack(spacing: 4) {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
+                SettingRowLabel(setting: setting)
                 if let explainer {
                     explainer
                 }
             }
             .layoutPriority(1)
 
-            Spacer(minLength: 8)
+            Spacer(minLength: SettingRowMetrics.labelGutter)
 
             picker
         }
-        .padding(.vertical, 4)
+        .settingRow()
     }
 
-    @ViewBuilder
+    /// A segmented control shows every option at once, which is worth the
+    /// width when the options are few and short. Once they are not, the same
+    /// choice has to become a pop-up button or it squeezes the title and its
+    /// own labels. Asking the layout whether the segments fit decides that per
+    /// row and per panel width, instead of each driver guessing.
     private var picker: some View {
-        switch style {
-        case .segmented:
+        ViewThatFits(in: .horizontal) {
             basePicker
                 .pickerStyle(.segmented)
                 .labelsHidden()
-        case .menu:
             basePicker
                 .pickerStyle(.menu)
                 .labelsHidden()
@@ -267,16 +252,18 @@ private struct SettingToggleRow: View {
     let onChange: (Bool) -> Void
 
     var body: some View {
-        Toggle(
-            isOn: Binding(get: { value }, set: { onChange($0) }),
-            label: {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
-            })
-        .toggleStyle(.switch)
-        .controlSize(.small)
-        .padding(.vertical, 4)
+        SettingRow(setting: setting) {
+            Toggle(
+                isOn: Binding(get: { value }, set: { onChange($0) }),
+                label: { EmptyView() })
+                .toggleStyle(.switch)
+                // Apple's guidance for a switch that controls a single row in
+                // a grouped form: the mini size is close to the height of the
+                // pickers and read-outs beside it, so rows stay even.
+                .controlSize(.mini)
+                .labelsHidden()
+                .accessibilityLabel(setting.title)
+        }
     }
 }
 
@@ -285,14 +272,11 @@ private struct SettingReadOnlyRow: View {
     let value: String
 
     var body: some View {
-        LabeledContent {
-            Text(value).foregroundStyle(.secondary)
-        } label: {
-            Label(setting.title, systemImage: setting.systemImage)
-                .font(.callout)
-                .labelStyle(.titleAndIcon)
+        SettingRow(setting: setting) {
+            Text(value)
+                .font(SettingRowMetrics.titleFont)
+                .foregroundStyle(.secondary)
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -302,17 +286,16 @@ private struct SettingColorRow: View {
     let onChange: (Int) -> Void
 
     var body: some View {
-        ColorPicker(
-            selection: Binding(
-                get: { value.color },
-                set: { onChange($0.packedRGB) }),
-            supportsOpacity: false,
-            label: {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
-            })
-        .padding(.vertical, 4)
+        SettingRow(setting: setting) {
+            ColorPicker(
+                selection: Binding(
+                    get: { value.color },
+                    set: { onChange($0.packedRGB) }),
+                supportsOpacity: false,
+                label: { EmptyView() })
+                .labelsHidden()
+                .accessibilityLabel(setting.title)
+        }
     }
 }
 
@@ -349,4 +332,43 @@ private extension Color {
         let blue = Int((color.blueComponent * 255).rounded())
         return (red << 16) | (green << 8) | blue
     }
+}
+
+// MARK: - Previews
+
+/// Drives `DeviceControlsView` from a local snapshot, so the controls respond
+/// without a driver at all.
+private struct PreviewControls: View {
+    let fixture: PreviewDevices.Fixture
+    @State private var snapshot: DACDeviceKit.Snapshot
+
+    init(fixture: PreviewDevices.Fixture) {
+        self.fixture = fixture
+        _snapshot = State(initialValue: fixture.snapshot)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(fixture.profile.displayName)
+                .font(.title3)
+                .padding(.horizontal, PanelMetrics.contentInset)
+                .padding(.top, 12)
+            DeviceControlsView(
+                settings: fixture.settings,
+                value: { snapshot[$0] },
+                textValue: { snapshot.textValues[$0] },
+                onChange: { snapshot[$0] = $1 })
+        }
+        .frame(width: PanelMetrics.panelWidth, alignment: .top)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+#Preview("Controls · side by side") {
+    HStack(alignment: .top, spacing: 0) {
+        PreviewControls(fixture: PreviewDevices.shanlingUA1II)
+        Divider()
+        PreviewControls(fixture: PreviewDevices.secondModel)
+    }
+    .fixedSize()
 }

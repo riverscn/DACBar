@@ -63,8 +63,11 @@ extension DACDeviceKit {
 
     public enum SettingPresentation: Hashable, Sendable {
         case range(minimum: Int, maximum: Int, step: Int, format: ValueFormat)
-        case segmented([SettingOption])
-        case menu([SettingOption])
+        /// A flat set of mutually exclusive values. How it is drawn -- as a
+        /// segmented control or as a pop-up button -- is the panel's call,
+        /// made from the option labels and the width it actually has. A driver
+        /// states the capability; it does not pick the control.
+        case options([SettingOption])
         case toggle
         case color
         case readOnly
@@ -110,7 +113,7 @@ extension DACDeviceKit {
                 guard !distance.overflow,
                       distance.partialValue.isMultiple(of: step)
                 else { throw DriverFailure.invalidSetting(id, value) }
-            case .segmented(let options), .menu(let options):
+            case .options(let options):
                 guard options.contains(where: { $0.value == value }) else {
                     throw DriverFailure.invalidSetting(id, value)
                 }
@@ -183,7 +186,7 @@ extension DACDeviceKit {
                         throw ConfigurationFailure.invalidRange(
                             setting.id, minimum: minimum, maximum: maximum, step: step)
                     }
-                case .segmented(let options), .menu(let options):
+                case .options(let options):
                     guard !options.isEmpty else {
                         throw ConfigurationFailure.emptyOptions(setting.id)
                     }

@@ -320,3 +320,50 @@ struct ContentView: View {
 
     // MARK: - Setup
 }
+
+// MARK: - Previews
+
+#Preview("Panel · Shanling UA1 II") {
+    ContentView(
+        model: .preview(fixtures: [PreviewDevices.shanlingUA1II]),
+        updates: UpdateController(platform: nil))
+}
+
+#Preview("Panel · second model") {
+    ContentView(
+        model: .preview(fixtures: [PreviewDevices.secondModel]),
+        updates: UpdateController(platform: nil))
+}
+
+// Renders the device pop-up, but do not open it in the canvas: AppKit traps
+// while building the pop-up menu's own window inside the preview host. The
+// backtrace is entirely NSPopUpButtonCell → NSPopupMenuWindow → NSWindow, with
+// no app frames in it, and the same goes for the filter and screen-timeout
+// rows. Run the app itself to exercise anything menu-shaped.
+#Preview("Panel · two devices attached") {
+    ContentView(
+        model: .preview(fixtures: [
+            PreviewDevices.shanlingUA1II, PreviewDevices.secondModel,
+        ]),
+        updates: UpdateController(platform: nil))
+}
+
+#Preview("Panel · no device") {
+    ContentView(
+        model: .preview(fixtures: []),
+        updates: UpdateController(platform: nil))
+}
+
+#Preview("Panel · reading") {
+    ContentView(
+        model: .preview(fixtures: [PreviewDevices.shanlingUA1II], behavior: .stalled),
+        updates: UpdateController(platform: nil))
+}
+
+#Preview("Panel · failure") {
+    ContentView(
+        model: .preview(
+            fixtures: [PreviewDevices.shanlingUA1II],
+            behavior: .failing("The device did not answer the status request.")),
+        updates: UpdateController(platform: nil))
+}
