@@ -1,6 +1,7 @@
 # 多型号设备架构
 
-DACBar 是厂商无关的产品；当前发布版本仍只启用经过真机验证的 Shanling UA1 II。
+DACBar 是厂商无关的产品；当前发布版本启用经过真机验证的 Shanling UA1 II 与
+iBasso DC-Tonfa。
 厂商和型号名称只允许出现在具体设备 target、App 的组合根、对应测试及研究文档中。
 把一个 Profile 加入组合根并不等同于宣称该型号可用；每个型号仍需在 macOS 上确认
 描述符、传输权限和真实报文。
@@ -24,7 +25,9 @@ DACBar.xcodeproj
 └── local package dependency
     └── Packages/DACDevices/
         ├── DACDeviceKit：厂商无关 contracts
-        └── ShanlingUA1II：profile + HID transport + wire codec
+        ├── DACHIDTransport：共享 IOHID discovery + report session（内部 target）
+        ├── ShanlingUA1II：profile + protocol state machine + wire codec
+        └── IBassoDCTonfa：profile + protocol state machine + wire codec
 ```
 
 `DACBar.xcodeproj` 直接拥有唯一的 App target 与 App test target。App 的生命周期、界面、
@@ -32,21 +35,24 @@ DACBar.xcodeproj
 而额外建立的 executable 壳，也不把 App 本身伪装成库产品。
 
 设备领域独立放在嵌套的 `Packages/DACDevices/Package.swift` 中，只输出
-`DACDeviceKit` 与 `ShanlingUA1II` 两个库产品。这样设备协议可用 `swift test
+`DACDeviceKit`、`ShanlingUA1II` 与 `IBassoDCTonfa` 三个库产品；`DACHIDTransport` 是只供
+package 内设备模块依赖的 target，不扩大公开产品面。设备协议可用 `swift test
 --package-path Packages/DACDevices` 独立验证，App 则使用 Xcode 的资源、Scheme、签名、
 测试宿主和发布模型。两个设备库仍位于同一 package；只有当某个模块需要跨 App 复用、
 独立发布或由不同团队维护时，才提取成外部 package。
 
 ## 当前冻结范围
 
-当前唯一实现并启用的组合是 `hidService + hidReports + shanling.ua1-ii.hid`。代码中的
+当前实现并启用的组合是 `hidService + hidReports` 下的 `shanling.ua1-ii.hid` 与
+`ibasso.dc-tonfa.hid`。代码中的
 `usbRegistry`、`vendorControl`、`interruptEndpoints` 和 `hidFeatureInterrupt` 只是为
 讨论未来型号保留的类型词汇，并没有对应的运行时 backend。它们不能用于判断某个型号
 已经受支持，唯一依据是 `DACBar/Application/SupportedDevices.swift` 的组合清单。
 
-在取得第二个型号并完成 macOS 真机调查前，不提前实现通用 USB discovery、bulk/vendor
-transport、轮询器或状态缓存。这样可以避免把 Linux/libusb 的接口占用假设带进 macOS，
-也避免抽象尚未出现的共同生命周期。
+两种设备已证明共享相同的 IOHID 生命周期，所以 `DACHIDTransport` 统一负责 HID snapshot
+枚举、完整 service identity 打开、run-loop callback、异步输出缓冲区所有权和安全关闭。
+报文格式、report ID、确认边界、查询事务与节奏仍由型号模块决定；bulk/vendor transport
+或轮询器没有证据支持，不能并入这个公共层。
 
 ## 数据流
 
@@ -70,11 +76,14 @@ DeviceWatcher → AttachedDevice(profile, location, registry entry identity)
 
 `Packages/DACDevices/Sources/DACDeviceKit/DeviceProfile.swift` 定义稳定的 `ModelID`、`DriverID`、
 USB/HID 匹配条件、发现方式、传输类型和验证状态。通用核心不枚举任何厂商或型号；
-`Packages/DACDevices/Sources/ShanlingUA1II/ShanlingUA1II.swift` 声明 UA1 II profile，设备 target 通过
+`Packages/DACDevices/Sources/ShanlingUA1II/ShanlingUA1II.swift` 与
+`Packages/DACDevices/Sources/IBassoDCTonfa/IBassoDCTonfa.swift` 分别声明型号 profile，设备 target 通过
 `DevicePlugin` 暴露 profiles、枚举和 factory；App 的 `SupportedDevices` 只组合要随
 当前版本发布的 plug-ins。
 
 HID watcher 的 matching dictionaries 由注册表生成，并与初始枚举使用同一套条件。
+设备 plug-in 的 snapshot 枚举与精确 service 打开由 `DACHIDTransport` 共用同一份
+signature/identity 规则；App watcher 仍负责长期 matching/removal 通知和重连调度。
 `AttachedDevice` 携带完整 Profile；选择持久化使用 `profile + locationID`，不会把同一
 端口上的不同型号误认为同一个设备。`registryEntryID` 继续用于识别 USB reset 后的
 不同 service。IOKit 只保证 registry entry ID 在本次启动期间唯一，它不是可排序的 generation
@@ -92,9 +101,9 @@ Profile 的固件命名别名。`DriverDescriptor` 同样在 plug-in 构造时�
 SettingGroup identity、range/step 和 retry policy；`DeviceModel` 接收 read 结果时再验证完整
 Snapshot，避免 SwiftUI identity collision、无效 range 和缺字段状态延迟到 UI。
 
-Shanling target 的宿主 API 只保留 `ShanlingUA1II.Plugin` 及预览所需的 setting metadata；
+各设备 target 的宿主 API 只保留 `Plugin` 及预览所需的 setting metadata；
 Connection、wire codec、命令和 concrete Driver 都是模块内部实现。Package 内的协议与真机
-测试继续通过 `@testable import ShanlingUA1II` 访问这些硬件 seam，App 与 App test 则通过
+测试继续通过 `@testable import` 对应设备模块访问这些硬件 seam，App 与 App test 则通过
 Plugin 边界创建 Driver。
 
 当前只有 `hidService` discovery backend。若某个型号只暴露 endpoint-zero vendor
@@ -117,8 +126,14 @@ IOHID 匹配条件。
 
 `UA1IIWireCodec` 是纯编解码边界：生成完整 41 字节输出报告，分类 9 字节状态页、ACK
 和结束帧，并把捕获的四页状态合并到 `State`。它不依赖 IOHID、run loop 或 actor，因而
-可直接用真机捕获帧覆盖畸形校验和、未知页和值域；`Connection` 仍保留已验证的 callback、
-buffer ownership、transaction gate 与 pacing。
+可直接用真机捕获帧覆盖畸形校验和、未知页和值域；`Connection` 保留 transaction gate、
+ACK matching 与 completion-based pacing，IOHID callback 和 buffer ownership 交给共享 session。
+
+`TonfaWireCodec` 同样保持为纯边界：生成 report ID 0 的 8 字节查询/设置报告，把固件、
+滤波、音量、音频组合字段和屏幕组合字段五类响应合并为完整 `State`。平衡在 UI 中使用
+`-10...10`，只在 codec 中转换为线上的 `0...20`；组合写入会带上缓存中的相邻字段，避免
+修改增益时意外覆盖同轴输出或平衡。Tonfa 没有独立 ACK，Driver 以异步 IOKit 输出完成
+作为确认边界，并用后续完整读取提供权威 readback。
 
 `readback` 与 `confirmation` 是 Driver 对外声明并自行兑现的协议语义，不是
 `DeviceModel` 的分支开关。无论底层是完整读回、部分读回还是 write-only cache，
@@ -128,9 +143,9 @@ buffer ownership、transaction gate 与 pacing。
 
 不同传输家族各自实现 Driver。不要直接复制 Linux/libusb 的 claim/detach 方案：
 macOS 上是否能非独占访问、是否影响音频、是否需要 entitlement，必须逐型号验证。
-等出现第二个确实共享 I/O 生命周期的 Driver 后，再抽取共同 Transport；现在保留
-UA1 II 已验证的 callback、run-loop、buffer ownership 和 pacing 实现，避免为了抽象
-改动硬件行为。
+`DACHIDTransport` 只承载 UA1 II 与 DC-Tonfa 已共同验证的 discovery/report session
+机制；设备 pacing、ACK/readback 和 wire codec 不属于 transport，也不能因下一台设备同样
+使用 HID 就直接复用。
 
 ### Observation 与并发
 
@@ -162,10 +177,10 @@ runner 是 Swift 6.4 源码测试与唯一构建环境，并逐个检查 App 与
 上述 job 生成的同一个 DMG，在 Intel CPU 上重新验证签名和 bundle 后实际启动 x86_64
 切片。这样既保持工具链真相源唯一，也验证最终交付物而非另一份独立构建。
 
-UA1 II 的实际 HID 读写目前只在 Apple Silicon 真机验证过。`.github/workflows/hardware.yml`
+UA1 II 与 DC-Tonfa 的实际 HID 读写目前只在 Apple Silicon 真机验证过。`.github/workflows/hardware.yml`
 把它隔离到带 `DACBar-Hardware` 标签、连接真机的 self-hosted runner，并且只允许个人仓库
 所有者从 `main` 手动触发；它不持有发布凭据，也不执行 PR 代码。Universal 2 与 Intel
-启动验证仍不等同于 Intel + UA1 II 硬件验证。不得为两种 CPU 架构维护不同的协议或状态机
+启动验证仍不等同于 Intel + 对应 DAC 的硬件验证。不得为两种 CPU 架构维护不同的协议或状态机
 分支。
 
 当前发布 App 采用 Developer ID + hardened runtime + 公证，但尚未启用 App Sandbox。
@@ -279,8 +294,9 @@ property listener 被动监听音量和静音属性，不能假定受控 DAC 同
 
 1. 在 macOS 上采集 USB/HID 描述符，确认 VID/PID、产品名、interface、usage、端点
    类型和 report sizes。
-2. 为厂商/型号新增独立 target（或加入已有的同厂商 target），只依赖
-   `DACDeviceKit`；在其中定义 `DeviceProfile` 和稳定的 `DriverID`。共享 PID 必须提供
+2. 为厂商/型号新增独立 target（或加入已有的同厂商 target），依赖 `DACDeviceKit`；若已
+   证明使用相同的 IOHID report 生命周期，再依赖 `DACHIDTransport`。在其中定义
+   `DeviceProfile` 和稳定的 `DriverID`。共享 PID 必须提供
    可区分的产品名，未真机验证时标记 `experimental`。
 3. 若 discovery backend 不同，先实现并测试对应的被动插拔通知。
 4. 在设备 target 内新增 Driver/协议实现；所有 wire 编码、值域验证、readback/ACK/
@@ -312,6 +328,11 @@ xcodebuild -project DACBar.xcodeproj -scheme DACBar \
 SHANLING_HARDWARE_TESTS=1 \
 SHANLING_HARDWARE_LOCATION_ID=0x01100000 \
 swift test --package-path Packages/DACDevices --scratch-path .build/package --no-parallel
+
+# DC-Tonfa 只读与同值写回真机回归
+IBASSO_TONFA_HARDWARE_TESTS=1 \
+swift test --package-path Packages/DACDevices \
+  --filter IBassoDCTonfaTests.HardwareIntegrationTests
 
 # 独立的 completion 间隔测量，不改变正式 130ms
 SHANLING_HARDWARE_TESTS=1 \

@@ -1,73 +1,1337 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "action.quit" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Quit" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "退出" } } } },
-    "action.refresh.accessibility" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Read device status again" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新读取设备状态" } } } },
-    "action.refresh.help" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Read again" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新读取" } } } },
-    "action.retry" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试" } } } },
-    "app.accessibility.controls" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "DAC device controls" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "DAC 设备控制" } } } },
-    "app.accessibility.device-absent" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No device detected" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未检测到设备" } } } },
-    "app.accessibility.device-present" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Device detected" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已检测到设备" } } } },
-    "app.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "DACBar" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "DACBar" } } } },
-    "balance.center" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Center" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "居中" } } } },
-    "balance.left" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Left %lld" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "左 %lld" } } } },
-    "balance.right" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Right %lld" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "右 %lld" } } } },
-    "device.experimental" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "This model has not been verified on hardware" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "该型号尚未完成真机验证" } } } },
-    "device.name-with-port" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ (Port %2$@)" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%1$@（端口 %2$@）" } } } },
-    "device.picker" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Device" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设备" } } } },
-    "error.hid-notification" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "HID device notification failed (0x%08X)." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "HID 设备通知失败 (0x%08X)。" } } } },
-    "error.hid-watch" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to monitor HID device changes (0x%08X)." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法监听 HID 设备变化 (0x%08X)。" } } } },
-    "error.invalid-snapshot" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The device returned an incomplete state." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设备返回的状态不完整。" } } } },
-    "error.main-run-loop" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to access the main run loop." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法取得主运行循环。" } } } },
-    "error.retry-failed" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%@. The retry also failed." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@，重试仍未成功。" } } } },
-    "error.write-unconfirmed" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The device did not confirm the write" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设备没有确认写入" } } } },
-    "hotkey.recorder.accessibility" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Record keyboard shortcut" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "录制键盘快捷键" } } } },
-    "hotkey.recording" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Type Shortcut…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请按快捷键…" } } } },
-    "settings.about" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关于" } } } },
-    "settings.automatic-checks" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatically Check for Updates" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动检查更新" } } } },
-    "settings.automatic-downloads" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatically Download Updates" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动下载更新" } } } },
-    "settings.enable-shortcuts" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable Global Shortcuts" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启用全局快捷键" } } } },
-    "settings.explanation" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Explanation" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "说明" } } } },
-    "settings.explanation.accessibility" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "About %@" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@说明" } } } },
-    "settings.general" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "General" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "通用" } } } },
-    "settings.launch-at-login" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Launch DACBar at Login" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "登录时启动 DACBar" } } } },
-    "settings.login-approval" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Allow DACBar in System Settings to finish enabling it." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请在系统设置中允许 DACBar，以完成启用。" } } } },
-    "settings.no-target" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No Device Selected" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未选择设备" } } } },
-    "settings.open" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置…" } } } },
-    "settings.open-login-items" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Login Items…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开登录项…" } } } },
-    "settings.registration" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Registration" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注册状态" } } } },
-    "settings.restore-shortcuts" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore Defaults" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恢复默认值" } } } },
-    "settings.shortcut-active" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Active" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已启用" } } } },
-    "settings.shortcut-conflict" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unavailable or Used by Another App" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不可用或已被其他 App 占用" } } } },
-    "settings.shortcut-disabled" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Disabled" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未启用" } } } },
-    "settings.shortcut-duplicate" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose Two Different Shortcuts" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请选择两个不同的快捷键" } } } },
-    "settings.shortcut-recording" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Paused While Recording" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "录制期间已暂停" } } } },
-    "settings.shortcut-status" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Status" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "状态" } } } },
-    "settings.shortcut-target" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Target DAC" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "目标 DAC" } } } },
-    "settings.shortcuts" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Shortcuts" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "快捷键" } } } },
-    "settings.shortcuts-note" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Shortcuts control the DAC selected in DACBar, including when an audio player uses it in exclusive mode." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "快捷键控制 DACBar 中选中的 DAC，包括播放器以独占模式使用它时。" } } } },
-    "settings.startup" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Startup" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启动" } } } },
-    "settings.target-unavailable" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ (Unavailable)" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@（暂不可用）" } } } },
-    "settings.updates" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Updates" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "更新" } } } },
-    "settings.version" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Version" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "版本" } } } },
-    "settings.volume" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Volume" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音量" } } } },
-    "settings.volume-down" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Decrease Volume" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "降低音量" } } } },
-    "settings.volume-up" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Increase Volume" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提高音量" } } } },
-    "settings.window-title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "DACBar Settings" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "DACBar 设置" } } } },
-    "state.connecting.detail" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Opening the device control channel…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在打开设备控制通道…" } } } },
-    "state.connecting.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Connecting" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在连接" } } } },
-    "state.failure.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to Control Device" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法控制设备" } } } },
-    "state.no-device.detail" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect a supported DAC." } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请插上支持的 DAC。" } } } },
-    "state.no-device.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No Device Detected" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未检测到设备" } } } },
-    "state.reading.detail" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Synchronizing device settings…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在同步设备设置…" } } } },
-    "state.reading.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在读取" } } } },
-    "status.connecting" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Connecting" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接中" } } } },
-    "status.disconnected" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Disconnected" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未连接" } } } },
-    "status.failed" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Error" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "出错" } } } },
-    "status.reading" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reading" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "读取中" } } } },
-    "status.ready" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Connected" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已连接" } } } },
-    "status.with-firmware" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · Firmware %2$@" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · 固件 %2$@" } } } },
-    "update.check" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates…" } }, "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "检查更新…" } } } }
+    "%@ (Unavailable)" : {
+
+    },
+    "%@. The retry also failed." : {
+
+    },
+    "%1$@ · Firmware %2$@" : {
+
+    },
+    "%1$@ (Port %2$@)" : {
+
+    },
+    "About" : {
+
+    },
+    "About %@" : {
+
+    },
+    "action.quit" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出"
+          }
+        }
+      }
+    },
+    "action.refresh.accessibility" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read device status again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新读取设备状态"
+          }
+        }
+      }
+    },
+    "action.refresh.help" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read again"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新读取"
+          }
+        }
+      }
+    },
+    "action.retry" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
+    },
+    "Active" : {
+
+    },
+    "Allow DACBar in System Settings to finish enabling it." : {
+
+    },
+    "app.accessibility.controls" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DAC device controls"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DAC 设备控制"
+          }
+        }
+      }
+    },
+    "app.accessibility.device-absent" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No device detected"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未检测到设备"
+          }
+        }
+      }
+    },
+    "app.accessibility.device-present" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device detected"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已检测到设备"
+          }
+        }
+      }
+    },
+    "app.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DACBar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DACBar"
+          }
+        }
+      }
+    },
+    "Automatically Check for Updates" : {
+
+    },
+    "Automatically Download Updates" : {
+
+    },
+    "balance.center" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Center"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "居中"
+          }
+        }
+      }
+    },
+    "balance.left" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Left %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左 %lld"
+          }
+        }
+      }
+    },
+    "balance.right" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右 %lld"
+          }
+        }
+      }
+    },
+    "Center" : {
+
+    },
+    "Check for Updates…" : {
+
+    },
+    "Choose Two Different Shortcuts" : {
+
+    },
+    "Connect a supported DAC." : {
+
+    },
+    "Connected" : {
+
+    },
+    "Connecting" : {
+
+    },
+    "DAC device controls" : {
+
+    },
+    "DACBar" : {
+
+    },
+    "Decrease Volume" : {
+
+    },
+    "Device" : {
+
+    },
+    "Device detected" : {
+
+    },
+    "device.experimental" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This model has not been verified on hardware"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该型号尚未完成真机验证"
+          }
+        }
+      }
+    },
+    "device.name-with-port" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (Port %2$@)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@（端口 %2$@）"
+          }
+        }
+      }
+    },
+    "device.picker" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备"
+          }
+        }
+      }
+    },
+    "Disabled" : {
+
+    },
+    "Disconnected" : {
+
+    },
+    "Enable Global Shortcuts" : {
+
+    },
+    "Error" : {
+
+    },
+    "error.hid-notification" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HID device notification failed (0x%08X)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HID 设备通知失败 (0x%08X)。"
+          }
+        }
+      }
+    },
+    "error.hid-watch" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to monitor HID device changes (0x%08X)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法监听 HID 设备变化 (0x%08X)。"
+          }
+        }
+      }
+    },
+    "error.invalid-snapshot" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The device returned an incomplete state."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备返回的状态不完整。"
+          }
+        }
+      }
+    },
+    "error.main-run-loop" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to access the main run loop."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法取得主运行循环。"
+          }
+        }
+      }
+    },
+    "error.retry-failed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. The retry also failed."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@，重试仍未成功。"
+          }
+        }
+      }
+    },
+    "error.write-unconfirmed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The device did not confirm the write"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备没有确认写入"
+          }
+        }
+      }
+    },
+    "Explanation" : {
+
+    },
+    "General" : {
+
+    },
+    "HID device notification failed (0x%08X)." : {
+
+    },
+    "hotkey.recorder.accessibility" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record keyboard shortcut"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制键盘快捷键"
+          }
+        }
+      }
+    },
+    "hotkey.recording" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type Shortcut…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请按快捷键…"
+          }
+        }
+      }
+    },
+    "Increase Volume" : {
+
+    },
+    "Launch DACBar at Login" : {
+
+    },
+    "Left %lld" : {
+
+    },
+    "No device detected" : {
+
+    },
+    "No Device Detected" : {
+
+    },
+    "No Device Selected" : {
+
+    },
+    "Open Login Items…" : {
+
+    },
+    "Opening the device control channel…" : {
+
+    },
+    "Paused While Recording" : {
+
+    },
+    "Quit" : {
+
+    },
+    "Read again" : {
+
+    },
+    "Read device status again" : {
+
+    },
+    "Reading" : {
+
+    },
+    "Record keyboard shortcut" : {
+
+    },
+    "Registration" : {
+
+    },
+    "Restore Defaults" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Right %lld" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "settings.about" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关于"
+          }
+        }
+      }
+    },
+    "settings.automatic-checks" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatically Check for Updates"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动检查更新"
+          }
+        }
+      }
+    },
+    "settings.automatic-downloads" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatically Download Updates"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自动下载更新"
+          }
+        }
+      }
+    },
+    "settings.enable-shortcuts" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Global Shortcuts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用全局快捷键"
+          }
+        }
+      }
+    },
+    "settings.explanation" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explanation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "说明"
+          }
+        }
+      }
+    },
+    "settings.explanation.accessibility" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@说明"
+          }
+        }
+      }
+    },
+    "settings.general" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通用"
+          }
+        }
+      }
+    },
+    "settings.launch-at-login" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Launch DACBar at Login"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录时启动 DACBar"
+          }
+        }
+      }
+    },
+    "settings.login-approval" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow DACBar in System Settings to finish enabling it."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请在系统设置中允许 DACBar，以完成启用。"
+          }
+        }
+      }
+    },
+    "settings.no-target" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Device Selected"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未选择设备"
+          }
+        }
+      }
+    },
+    "settings.open" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置…"
+          }
+        }
+      }
+    },
+    "settings.open-login-items" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Login Items…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开登录项…"
+          }
+        }
+      }
+    },
+    "settings.registration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registration"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "注册状态"
+          }
+        }
+      }
+    },
+    "settings.restore-shortcuts" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Defaults"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复默认值"
+          }
+        }
+      }
+    },
+    "settings.shortcut-active" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已启用"
+          }
+        }
+      }
+    },
+    "settings.shortcut-conflict" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable or Used by Another App"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不可用或已被其他 App 占用"
+          }
+        }
+      }
+    },
+    "settings.shortcut-disabled" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disabled"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未启用"
+          }
+        }
+      }
+    },
+    "settings.shortcut-duplicate" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Two Different Shortcuts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请选择两个不同的快捷键"
+          }
+        }
+      }
+    },
+    "settings.shortcut-recording" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused While Recording"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录制期间已暂停"
+          }
+        }
+      }
+    },
+    "settings.shortcut-status" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "状态"
+          }
+        }
+      }
+    },
+    "settings.shortcut-target" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Target DAC"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标 DAC"
+          }
+        }
+      }
+    },
+    "settings.shortcuts" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortcuts"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷键"
+          }
+        }
+      }
+    },
+    "settings.shortcuts-note" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shortcuts control the DAC selected in DACBar, including when an audio player uses it in exclusive mode."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "快捷键控制 DACBar 中选中的 DAC，包括播放器以独占模式使用它时。"
+          }
+        }
+      }
+    },
+    "settings.startup" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Startup"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启动"
+          }
+        }
+      }
+    },
+    "settings.target-unavailable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (Unavailable)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@（暂不可用）"
+          }
+        }
+      }
+    },
+    "settings.updates" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updates"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新"
+          }
+        }
+      }
+    },
+    "settings.version" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本"
+          }
+        }
+      }
+    },
+    "settings.volume" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音量"
+          }
+        }
+      }
+    },
+    "settings.volume-down" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Decrease Volume"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "降低音量"
+          }
+        }
+      }
+    },
+    "settings.volume-up" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Increase Volume"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提高音量"
+          }
+        }
+      }
+    },
+    "settings.window-title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DACBar Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DACBar 设置"
+          }
+        }
+      }
+    },
+    "Shortcuts" : {
+
+    },
+    "Shortcuts control the DAC selected in DACBar, including when an audio player uses it in exclusive mode." : {
+
+    },
+    "Startup" : {
+
+    },
+    "state.connecting.detail" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening the device control channel…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在打开设备控制通道…"
+          }
+        }
+      }
+    },
+    "state.connecting.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在连接"
+          }
+        }
+      }
+    },
+    "state.failure.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Control Device"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法控制设备"
+          }
+        }
+      }
+    },
+    "state.no-device.detail" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect a supported DAC."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请插上支持的 DAC。"
+          }
+        }
+      }
+    },
+    "state.no-device.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Device Detected"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未检测到设备"
+          }
+        }
+      }
+    },
+    "state.reading.detail" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronizing device settings…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在同步设备设置…"
+          }
+        }
+      }
+    },
+    "state.reading.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在读取"
+          }
+        }
+      }
+    },
+    "Status" : {
+
+    },
+    "status.connecting" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接中"
+          }
+        }
+      }
+    },
+    "status.disconnected" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnected"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未连接"
+          }
+        }
+      }
+    },
+    "status.failed" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "出错"
+          }
+        }
+      }
+    },
+    "status.reading" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "读取中"
+          }
+        }
+      }
+    },
+    "status.ready" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已连接"
+          }
+        }
+      }
+    },
+    "status.with-firmware" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · Firmware %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · 固件 %2$@"
+          }
+        }
+      }
+    },
+    "Synchronizing device settings…" : {
+
+    },
+    "Target DAC" : {
+
+    },
+    "The device did not confirm the write" : {
+
+    },
+    "The device returned an incomplete state." : {
+
+    },
+    "This model has not been verified on hardware" : {
+
+    },
+    "Type Shortcut…" : {
+
+    },
+    "Unable to access the main run loop." : {
+
+    },
+    "Unable to Control Device" : {
+
+    },
+    "Unable to monitor HID device changes (0x%08X)." : {
+
+    },
+    "Unavailable or Used by Another App" : {
+
+    },
+    "update.check" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for Updates…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检查更新…"
+          }
+        }
+      }
+    },
+    "Updates" : {
+
+    },
+    "Version" : {
+
+    },
+    "Volume" : {
+
+    }
   },
   "version" : "1.0"
 }

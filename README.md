@@ -1,10 +1,12 @@
 # DACBar
 
-面向多厂商 USB DAC 的 macOS 菜单栏控制 App。首个且目前唯一完成真机验证的设备是
-Shanling UA1 II（`20B1:3033`）；厂商品牌只存在于对应的设备模块中，不代表 App 品牌。
+面向多厂商 USB DAC 的 macOS 菜单栏控制 App。目前完成真机验证的设备是
+Shanling UA1 II（`20B1:3033`）与 iBasso DC-Tonfa（`2FC6:F121`；同时兼容官网登记的
+`2FC6:6011`）；厂商品牌只存在于对应的设备模块中，不代表 App 品牌。
 
-协议已在真机上双向验证，七个命令字全部确认——过程见
-[ProtocolFindings.md](Documentation/ShanlingUA1II/ProtocolFindings.md)。
+两套协议均已在真机上验证读写——过程见
+[UA1 II 调查](Documentation/ShanlingUA1II/ProtocolFindings.md)与
+[DC-Tonfa 调查](Documentation/IBassoDCTonfa/ProtocolFindings.md)。
 
 ## 仓库内容
 
@@ -13,7 +15,7 @@ Shanling UA1 II（`20B1:3033`）；厂商品牌只存在于对应的设备模块
 | `DACBar.xcodeproj` | 原生 macOS App、App tests、共享 Scheme 和发布入口 |
 | `DACBar/` | `DACBar` App target 的入口、SwiftUI、业务模型、组合根、Sparkle 与本地化资源 |
 | `DACBarTests/` | 由 Xcode test target 托管的 App/业务层测试 |
-| `Packages/DACDevices/` | 可独立测试的设备 SDK；包含厂商无关核心与 UA1 II plug-in |
+| `Packages/DACDevices/` | 可独立测试的设备 SDK；包含厂商无关核心与 UA1 II、DC-Tonfa plug-ins |
 | [`Documentation/Architecture.md`](Documentation/Architecture.md) | 多型号 Profile、Driver、能力与 UI 扩展边界 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 用户可见的版本变更 |
 | [`Documentation/Releasing.md`](Documentation/Releasing.md) | CI、Developer ID、公证和发布流程 |
@@ -68,14 +70,15 @@ debug 和 release 都生成同时支持 Apple Silicon 与 Intel Mac 的 Universa
 
 ## 架构
 
-当前发布版只启用经过真机验证的 UA1 II，但设备识别和 App 状态没有写死具体型号：
+当前发布版启用经过真机验证的 UA1 II 与 DC-Tonfa，但设备识别和 App 状态没有写死具体型号：
 组合根注册设备模块，发现结果携带 Profile，Driver 把型号协议转换为通用的
 `Snapshot`/`Mutation`，SwiftUI 再按 Driver 提供的 `SettingDescriptor` 动态生成控件。
 新增型号只需新增设备 target 并在 `SupportedDevices` 注册，不需要修改 `DeviceModel`
 或 `ContentView`。完整分层和接入清单见
 [`Documentation/Architecture.md`](Documentation/Architecture.md)。
 
-目前只有 `hidService + hidReports + shanling.ua1-ii.hid` 有实际 backend；源码里其它 discovery
+目前 `hidService + hidReports` 下有 `shanling.ua1-ii.hid` 与 `ibasso.dc-tonfa.hid` 两个
+实际 backend；源码里其它 discovery
 和 transport 枚举只是预留词汇，不表示对应型号已经可用。支持范围以
 `DACBar/Application/SupportedDevices.swift` 的组合结果为准。
 
@@ -85,8 +88,14 @@ debug 和 release 都生成同时支持 Apple Silicon 与 Intel Mac 的 Universa
 ```
 DACBar.app  (用户态)
       ↕ IOHIDDevice
-Shanling UA1 II  接口 2（HID）
+Shanling UA1 II / iBasso DC-Tonfa（HID）
 ```
+
+两台设备的 wire protocol 不同：UA1 II 使用带 report ID 的 41/9 字节报文并以设备 ACK
+确认写入；DC-Tonfa 使用 report ID 0 的 8/8 字节报文，写入以 IOKit 传输完成确认，完整读取
+由五类查询响应合成。两者共享厂商无关的 Driver contract，以及已共同验证的 IOHID 枚举、
+精确 service 打开、callback、异步发送缓冲区与关闭机制；wire codec、ACK/readback 和节奏
+仍分别留在设备模块中。
 
 写入是输出报告，读取是输入报告（四页约 1 秒），设备还会在**机身按键改动设置时主动上报**，
 所以面板不用轮询也能跟机身保持一致。全程不影响音频。
@@ -251,8 +260,9 @@ sudo ./.build/tools/capture verify       # 批量验证命令字，自动恢复�
 
 项目以 Xcode 27 / Swift 6.4 为工具链基线，并使用 Swift 6 language mode。
 `DACBar.xcodeproj` 直接拥有唯一的 App target 和 App test target；
-`Packages/DACDevices/Package.swift` 只提供 `DACDeviceKit` 与 `ShanlingUA1II` 两个
-可复用库。`build.sh` 调用共享的 `DACBar` Scheme，再完成 Universal 2 产物的签名与验证。
+`Packages/DACDevices/Package.swift` 提供 `DACDeviceKit`、`ShanlingUA1II` 与
+`IBassoDCTonfa` 三个可复用库，并包含只供设备模块使用的 `DACHIDTransport` 内部 target。
+`build.sh` 调用共享的 `DACBar` Scheme，再完成 Universal 2 产物的签名与验证。
 
 Xcode 的 Debug 与 Release 都是可直接运行的本地配置；ad-hoc 主程序使用
 `DACBar.Local.entitlements` 加载独立 ad-hoc 签名的 Sparkle。Distribution 不携带该

@@ -1,5 +1,6 @@
 import DACDeviceKit
 import Foundation
+import IBassoDCTonfa
 import SwiftUI
 
 private typealias SettingDescriptor = DACDeviceKit.SettingDescriptor
@@ -42,6 +43,15 @@ enum PreviewDevices {
             for: SupportedDevices.previewSettings,
             firmware: "1.3",
             overrides: [.volume: 64, .gain: 1, .filter: 2, .balance: -3]))
+
+    /// The other shipping model, with its real descriptors.
+    static let tonfa = Fixture(
+        profile: IBassoDCTonfa.Plugin().profiles[0],
+        settings: IBassoDCTonfa.Plugin.previewSettings,
+        snapshot: snapshot(
+            for: IBassoDCTonfa.Plugin.previewSettings,
+            firmware: "3.14.39",
+            text: [SettingID(rawValue: "uac-version"): "2.0"]))
 
     /// A fictional second model. Different vendor, different capabilities, no
     /// styling of its own.

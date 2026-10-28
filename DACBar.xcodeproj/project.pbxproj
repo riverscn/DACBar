@@ -12,8 +12,9 @@
 		200000000000000000000002 /* AttachedDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000002 /* AttachedDevice.swift */; };
 		200000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000003 /* ContentView.swift */; };
 		200000000000000000000004 /* DeviceControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000004 /* DeviceControlsView.swift */; };
-		200000000000000000000090 /* SettingRowStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000090 /* SettingRowStyle.swift */; };
 		200000000000000000000091 /* PreviewSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000091 /* PreviewSupport.swift */; };
+		200000000000000000000092 /* PreviewFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000090 /* PreviewFixtureTests.swift */; };
+		200000000000000000000090 /* SettingRowStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000090 /* SettingRowStyle.swift */; };
 		200000000000000000000005 /* DeviceGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000005 /* DeviceGlyph.swift */; };
 		200000000000000000000006 /* DeviceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000006 /* DeviceModel.swift */; };
 		200000000000000000000007 /* DeviceWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000007 /* DeviceWatcher.swift */; };
@@ -44,6 +45,8 @@
 		200000000000000000000020 /* DeviceSelectionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000015 /* DeviceSelectionStore.swift */; };
 		200000000000000000000021 /* DeviceControlsViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000005 /* DeviceControlsViewTests.swift */; };
 		200000000000000000000092 /* PreviewFixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130000000000000000000090 /* PreviewFixtureTests.swift */; };
+		200000000000000000000022 /* IBassoDCTonfa in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000006 /* IBassoDCTonfa */; };
+		200000000000000000000023 /* IBassoDCTonfa in Frameworks */ = {isa = PBXBuildFile; productRef = 710000000000000000000007 /* IBassoDCTonfa */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,8 +65,9 @@
 		110000000000000000000002 /* AttachedDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedDevice.swift; sourceTree = "<group>"; };
 		110000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		110000000000000000000004 /* DeviceControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlsView.swift; sourceTree = "<group>"; };
-		110000000000000000000090 /* SettingRowStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingRowStyle.swift; sourceTree = "<group>"; };
 		110000000000000000000091 /* PreviewSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSupport.swift; sourceTree = "<group>"; };
+		130000000000000000000090 /* PreviewFixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewFixtureTests.swift; sourceTree = "<group>"; };
+		110000000000000000000090 /* SettingRowStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingRowStyle.swift; sourceTree = "<group>"; };
 		110000000000000000000005 /* DeviceGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceGlyph.swift; sourceTree = "<group>"; };
 		110000000000000000000006 /* DeviceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModel.swift; sourceTree = "<group>"; };
 		110000000000000000000007 /* DeviceWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceWatcher.swift; sourceTree = "<group>"; };
@@ -103,6 +107,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				200000000000000000000011 /* DACDeviceKit in Frameworks */,
+				200000000000000000000022 /* IBassoDCTonfa in Frameworks */,
 				200000000000000000000012 /* ShanlingUA1II in Frameworks */,
 				200000000000000000000013 /* Sparkle in Frameworks */,
 			);
@@ -113,6 +118,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				200000000000000000000017 /* DACDeviceKit in Frameworks */,
+				200000000000000000000023 /* IBassoDCTonfa in Frameworks */,
 				200000000000000000000018 /* ShanlingUA1II in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -302,6 +308,7 @@
 			name = DACBar;
 			packageProductDependencies = (
 				710000000000000000000001 /* DACDeviceKit */,
+				710000000000000000000006 /* IBassoDCTonfa */,
 				710000000000000000000002 /* ShanlingUA1II */,
 				710000000000000000000003 /* Sparkle */,
 			);
@@ -325,6 +332,7 @@
 			name = DACBarTests;
 			packageProductDependencies = (
 				710000000000000000000004 /* DACDeviceKit */,
+				710000000000000000000007 /* IBassoDCTonfa */,
 				710000000000000000000005 /* ShanlingUA1II */,
 			);
 			productName = DACBarTests;
@@ -584,6 +592,8 @@
 		710000000000000000000003 /* Sparkle */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000002 /* XCRemoteSwiftPackageReference "Sparkle" */; productName = Sparkle; };
 		710000000000000000000004 /* DACDeviceKit */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = DACDeviceKit; };
 		710000000000000000000005 /* ShanlingUA1II */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = ShanlingUA1II; };
+		710000000000000000000006 /* IBassoDCTonfa */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = IBassoDCTonfa; };
+		710000000000000000000007 /* IBassoDCTonfa */ = {isa = XCSwiftPackageProductDependency; package = 700000000000000000000001 /* XCLocalSwiftPackageReference "Packages/DACDevices" */; productName = IBassoDCTonfa; };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 500000000000000000000002 /* Project object */;

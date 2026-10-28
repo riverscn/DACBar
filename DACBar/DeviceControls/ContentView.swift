@@ -329,6 +329,12 @@ struct ContentView: View {
         updates: UpdateController(platform: nil))
 }
 
+#Preview("Panel · iBasso DC-Tonfa") {
+    ContentView(
+        model: .preview(fixtures: [PreviewDevices.tonfa]),
+        updates: UpdateController(platform: nil))
+}
+
 #Preview("Panel · second model") {
     ContentView(
         model: .preview(fixtures: [PreviewDevices.secondModel]),
@@ -343,7 +349,7 @@ struct ContentView: View {
 #Preview("Panel · two devices attached") {
     ContentView(
         model: .preview(fixtures: [
-            PreviewDevices.shanlingUA1II, PreviewDevices.secondModel,
+            PreviewDevices.shanlingUA1II, PreviewDevices.tonfa,
         ]),
         updates: UpdateController(platform: nil))
 }

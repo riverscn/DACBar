@@ -368,7 +368,7 @@ private struct PreviewControls: View {
     HStack(alignment: .top, spacing: 0) {
         PreviewControls(fixture: PreviewDevices.shanlingUA1II)
         Divider()
-        PreviewControls(fixture: PreviewDevices.secondModel)
+        PreviewControls(fixture: PreviewDevices.tonfa)
     }
     .fixedSize()
 }

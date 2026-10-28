@@ -1,0 +1,557 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "10 sec" : {
+
+    },
+    "20 sec" : {
+
+    },
+    "30 sec" : {
+
+    },
+    "Always on" : {
+
+    },
+    "Balance" : {
+
+    },
+    "Coaxial output" : {
+
+    },
+    "Device not found." : {
+
+    },
+    "error.device-not-found" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device not found."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未找到设备。"
+          }
+        }
+      }
+    },
+    "error.device-removed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The device was disconnected."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备已断开。"
+          }
+        }
+      }
+    },
+    "error.device-timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The device did not respond."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备无响应。"
+          }
+        }
+      }
+    },
+    "error.hid-unavailable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to access the HID subsystem (0x%08X)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问 HID 子系统 (0x%08X)。"
+          }
+        }
+      }
+    },
+    "error.invalid-frame" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The device returned invalid data."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设备返回了无效数据。"
+          }
+        }
+      }
+    },
+    "error.invalid-wire-value" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The setting value is invalid."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置值无效。"
+          }
+        }
+      }
+    },
+    "error.state-unavailable" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read the device state before changing this setting."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先读取设备状态，再更改此设置。"
+          }
+        }
+      }
+    },
+    "error.write-failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Write failed (0x%08X)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写入失败 (0x%08X)。"
+          }
+        }
+      }
+    },
+    "Filter" : {
+
+    },
+    "filter.latency-fast" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low latency, fast roll-off"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低延迟快速衰减"
+          }
+        }
+      }
+    },
+    "filter.latency-slow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low latency, slow roll-off"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低延迟慢速衰减"
+          }
+        }
+      }
+    },
+    "filter.nos" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non-oversampling"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "非过采样"
+          }
+        }
+      }
+    },
+    "filter.phase-fast" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phase-compensated, fast roll-off"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相位补偿快速衰减"
+          }
+        }
+      }
+    },
+    "filter.phase-slow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Phase-compensated, slow roll-off"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "相位补偿慢速衰减"
+          }
+        }
+      }
+    },
+    "Gain" : {
+
+    },
+    "High" : {
+
+    },
+    "Knob controls volume while screen is off" : {
+
+    },
+    "Low" : {
+
+    },
+    "Low latency, fast roll-off" : {
+
+    },
+    "Low latency, slow roll-off" : {
+
+    },
+    "Medium" : {
+
+    },
+    "Non-oversampling" : {
+
+    },
+    "Orientation" : {
+
+    },
+    "Phase-compensated, fast roll-off" : {
+
+    },
+    "Phase-compensated, slow roll-off" : {
+
+    },
+    "Read the device state before changing this setting." : {
+
+    },
+    "Screen timeout" : {
+
+    },
+    "settings.balance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balance"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "声道平衡"
+          }
+        }
+      }
+    },
+    "settings.coaxial-output" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coaxial output"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同轴输出"
+          }
+        }
+      }
+    },
+    "settings.filter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数字滤波器"
+          }
+        }
+      }
+    },
+    "settings.gain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gain"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增益"
+          }
+        }
+      }
+    },
+    "settings.gain.high" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高增益"
+          }
+        }
+      }
+    },
+    "settings.gain.low" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Low"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "低增益"
+          }
+        }
+      }
+    },
+    "settings.gain.medium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中增益"
+          }
+        }
+      }
+    },
+    "settings.key-control" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knob controls volume while screen is off"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "灭屏音量旋钮调节音量"
+          }
+        }
+      }
+    },
+    "settings.orientation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orientation"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "屏幕方向"
+          }
+        }
+      }
+    },
+    "settings.screen-timeout" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screen timeout"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "熄屏时间"
+          }
+        }
+      }
+    },
+    "settings.screen-timeout.10" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 sec"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10 秒"
+          }
+        }
+      }
+    },
+    "settings.screen-timeout.20" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "20 sec"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "20 秒"
+          }
+        }
+      }
+    },
+    "settings.screen-timeout.30" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 sec"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 秒"
+          }
+        }
+      }
+    },
+    "settings.screen-timeout.always" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Always on"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "常亮"
+          }
+        }
+      }
+    },
+    "settings.uac-version" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UAC version"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UAC 版本"
+          }
+        }
+      }
+    },
+    "settings.volume" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volume"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音量"
+          }
+        }
+      }
+    },
+    "The device did not respond." : {
+
+    },
+    "The device returned invalid data." : {
+
+    },
+    "The device was disconnected." : {
+
+    },
+    "The setting value is invalid." : {
+
+    },
+    "UAC version" : {
+
+    },
+    "Unable to access the HID subsystem (0x%08X)." : {
+
+    },
+    "Volume" : {
+
+    },
+    "Write failed (0x%08X)." : {
+
+    }
+  },
+  "version" : "1.0"
+}
