@@ -8,6 +8,18 @@ import Testing
 @Suite("IOHID device watcher callbacks")
 struct DeviceWatcherTests {
     @MainActor
+    @Test("Composition registers all supported HID models")
+    func supportedDeviceComposition() {
+        #expect(
+            SupportedDevices.registry.profiles.map(\.id.rawValue) == [
+                "shanling.ua1-ii",
+                "ibasso.dc-tonfa",
+            ]
+        )
+        #expect(SupportedDevices.registry.hidMatches.count == 3)
+    }
+
+    @MainActor
     @Test("Start is idempotent and stop tears down callbacks and scheduling")
     func lifecycleTeardown() throws {
         let fake = DeviceWatcherPlatformFake()

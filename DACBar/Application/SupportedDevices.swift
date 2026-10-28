@@ -1,6 +1,7 @@
 import CoreFoundation
 import IOKit.hid
 import DACDeviceKit
+import IBassoDCTonfa
 import ShanlingUA1II
 
 /// The composition root for device plug-ins shipped in this App build.
@@ -10,6 +11,7 @@ import ShanlingUA1II
 enum SupportedDevices {
     private static let plugins: [any DACDeviceKit.DevicePlugin] = [
         ShanlingUA1II.Plugin(),
+        IBassoDCTonfa.Plugin(),
     ]
 
     static let registry = try! DACDeviceKit.DeviceRegistry(

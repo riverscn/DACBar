@@ -20,6 +20,9 @@ extension DACDeviceKit {
         public static let screenTimeout = SettingID(rawValue: "screen-timeout")
         public static let screenOffset = SettingID(rawValue: "screen-offset")
         public static let themeColor = SettingID(rawValue: "theme-color")
+        public static let coaxialOutput = SettingID(rawValue: "coaxial-output")
+        public static let keyControl = SettingID(rawValue: "key-control")
+        public static let uacVersion = SettingID(rawValue: "uac-version")
     }
 
     public struct SettingGroup: Identifiable, Hashable, Sendable {

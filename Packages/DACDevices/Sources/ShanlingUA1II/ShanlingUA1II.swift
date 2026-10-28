@@ -1,9 +1,9 @@
 import CoreFoundation
 import Foundation
 import IOKit
-import IOKit.hid
 import OSLog
 import DACDeviceKit
+import DACHIDTransport
 
 /// Vendor-channel access for the Shanling UA1 II.
 ///
@@ -182,164 +182,14 @@ public enum ShanlingUA1II {
 
     /// Every attached dongle.
     static func devices() throws -> [Device] {
-        let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
-        setDeviceMatching(manager, profiles: registry.profiles)
-        let result = IOHIDManagerOpen(manager, 0)
-        guard result == kIOReturnSuccess else { throw Failure.managerFailed(result) }
-        defer { IOHIDManagerClose(manager, 0) }
-
-        let all = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
-        let candidates = all.compactMap { discoveredDevice(for: $0) }
-        return discardingAmbiguousRegistryEntries(candidates)
-    }
-
-    /// IOHID may briefly expose both the retiring and replacement service for
-    /// one physical port. Registry entry IDs are opaque, so an overlapping
-    /// snapshot cannot identify either service as newer. Omit that logical
-    /// device until a later settled snapshot contains exactly one service.
-    static func discardingAmbiguousRegistryEntries(
-        _ candidates: [Device]
-    ) -> [Device] {
-        Dictionary(grouping: candidates, by: \.id).values.compactMap { matches in
-            matches.count == 1 ? matches[0] : nil
-        }.sorted {
-            ($0.locationID, $0.profile.id.rawValue)
-                < ($1.locationID, $1.profile.id.rawValue)
+        do {
+            return try DACHIDTransport.DeviceDiscovery.devices(in: registry)
+        } catch DACHIDTransport.Failure.managerFailed(let result) {
+            throw Failure.managerFailed(result)
         }
-    }
-
-    static func matchesOpeningIdentity(expected: Device, actual: Device) -> Bool {
-        expected.profile == actual.profile
-            && expected.productID == actual.productID
-            && expected.locationID == actual.locationID
-            && expected.registryEntryID == actual.registryEntryID
-    }
-
-    private static func discoveredDevice(
-        for device: IOHIDDevice,
-        registry: DeviceRegistry = registry
-    ) -> Device? {
-        guard let profile = profile(for: device, registry: registry) else { return nil }
-        guard let location = property(device, kIOHIDLocationIDKey) as? NSNumber
-        else { return nil }
-        let locationID = UInt32(truncatingIfNeeded: location.intValue)
-        let productID = numberProperty(device, kIOHIDProductIDKey) ?? 0
-        let name = property(device, kIOHIDProductKey) as? String ?? profile.displayName
-        let registryEntryID = registryEntryID(of: device)
-        guard registryEntryID != 0 else { return nil }
-        return Device(
-            profile: profile,
-            productID: productID,
-            locationID: locationID,
-            registryEntryID: registryEntryID,
-            name: name)
-    }
-
-    private static func setDeviceMatching(
-        _ manager: IOHIDManager,
-        profiles: [DeviceProfile]
-    ) {
-        let dictionaries = profiles
-            .filter { $0.discoveryKind == .hidService }
-            .flatMap(\.hidMatches)
-            .map { match in
-            [
-                kIOHIDVendorIDKey: match.vendorID,
-                kIOHIDProductIDKey: match.productID,
-                kIOHIDPrimaryUsagePageKey: match.usagePage,
-                kIOHIDPrimaryUsageKey: match.usage,
-            ] as CFDictionary
-        } as CFArray
-        IOHIDManagerSetDeviceMatchingMultiple(manager, dictionaries)
-    }
-
-    private static func property(_ device: IOHIDDevice, _ key: String) -> Any? {
-        IOHIDDeviceGetProperty(device, key as CFString)
-    }
-
-    private static func numberProperty(_ device: IOHIDDevice, _ key: String) -> Int? {
-        (property(device, key) as? NSNumber)?.intValue
-    }
-
-    private static func profile(
-        for device: IOHIDDevice,
-        registry: DeviceRegistry = registry
-    ) -> DeviceProfile? {
-        guard let vendorID = numberProperty(device, kIOHIDVendorIDKey),
-              let productID = numberProperty(device, kIOHIDProductIDKey),
-              let usagePage = numberProperty(device, kIOHIDPrimaryUsagePageKey),
-              let usage = numberProperty(device, kIOHIDPrimaryUsageKey),
-              let input = numberProperty(device, kIOHIDMaxInputReportSizeKey),
-              let output = numberProperty(device, kIOHIDMaxOutputReportSizeKey)
-        else { return nil }
-        let productName = property(device, kIOHIDProductKey) as? String ?? ""
-        return registry.profile(
-            vendorID: vendorID,
-            productID: productID,
-            productName: productName,
-            usagePage: usagePage,
-            usage: usage,
-            inputReportSize: input,
-            outputReportSize: output)
-    }
-
-    private static func registryEntryID(of device: IOHIDDevice) -> UInt64 {
-        var id: UInt64 = 0
-        IORegistryEntryGetRegistryEntryID(IOHIDDeviceGetService(device), &id)
-        return id
     }
 
     // MARK: - Session
-
-    /// Owns the report bytes until IOKit invokes the asynchronous completion.
-    /// The callback is not guaranteed to use the main actor, so completion state
-    /// is protected independently of Connection's actor isolation.
-    private final class ReportSendOperation: @unchecked Sendable {
-        let buffer: UnsafeMutablePointer<UInt8>
-        let count: Int
-
-        private let lock = NSLock()
-        private var continuation: CheckedContinuation<IOReturn, Never>?
-        private var completedResult: IOReturn?
-
-        init(frame: [UInt8]) {
-            count = frame.count
-            let allocated = UnsafeMutablePointer<UInt8>.allocate(capacity: frame.count)
-            frame.withUnsafeBufferPointer { source in
-                allocated.initialize(from: source.baseAddress!, count: frame.count)
-            }
-            buffer = allocated
-        }
-
-        func install(_ continuation: CheckedContinuation<IOReturn, Never>) {
-            lock.lock()
-            if let completedResult {
-                lock.unlock()
-                continuation.resume(returning: completedResult)
-            } else {
-                self.continuation = continuation
-                lock.unlock()
-            }
-        }
-
-        func finish(_ result: IOReturn) {
-            lock.lock()
-            guard completedResult == nil else {
-                lock.unlock()
-                return
-            }
-            completedResult = result
-            let continuation = self.continuation
-            self.continuation = nil
-            lock.unlock()
-            continuation?.resume(returning: result)
-        }
-
-        deinit {
-            buffer.deinitialize(count: count)
-            buffer.deallocate()
-        }
-    }
 
     /// An open connection to one dongle: writes settings, reads state, and
     /// reports changes made on the device itself.
@@ -374,8 +224,6 @@ public enum ShanlingUA1II {
         private static let ackTimeout: Duration = .milliseconds(400)
         private static let settleInterval: Duration = .milliseconds(120)
         private static let sendTimeoutMilliseconds: CFTimeInterval = 500
-        private static let eventTrackingRunLoopMode = CFRunLoopMode(
-            rawValue: "NSEventTrackingRunLoopMode" as CFString)
 
         private struct FrameWaiter {
             let id: Int
@@ -388,13 +236,8 @@ public enum ShanlingUA1II {
             let continuation: CheckedContinuation<Void, any Error>
         }
 
-        private let manager: IOHIDManager
-        private let device: IOHIDDevice
-        private let runLoop: CFRunLoop
-        private var buffer: UnsafeMutablePointer<UInt8>?
+        private let session: DACHIDTransport.ReportSession
         private var closed = false
-        private var ioTornDown = false
-        private var activeSendCount = 0
         private var lastSend: ContinuousClock.Instant?
 
         private var transactionBusy = false
@@ -414,60 +257,22 @@ public enum ShanlingUA1II {
             guard profile == ShanlingUA1II.profile else {
                 throw Failure.deviceNotFound
             }
-            let manager = IOHIDManagerCreate(kCFAllocatorDefault,
-                                             IOOptionBits(kIOHIDOptionsTypeNone))
-            setDeviceMatching(manager, profiles: [profile])
-            let openResult = IOHIDManagerOpen(manager, 0)
-            guard openResult == kIOReturnSuccess else {
-                throw Failure.managerFailed(openResult)
-            }
-
-            let all = IOHIDManagerCopyDevices(manager) as? Set<IOHIDDevice> ?? []
-            let match = all.first { candidate in
-                guard let actual = discoveredDevice(
-                    for: candidate, registry: ShanlingUA1II.registry) else { return false }
-                return matchesOpeningIdentity(expected: expected, actual: actual)
-            }
-            guard let match else {
-                IOHIDManagerClose(manager, 0)
+            do {
+                session = try DACHIDTransport.ReportSession(
+                    device: expected, registry: ShanlingUA1II.registry)
+            } catch DACHIDTransport.Failure.managerFailed(let result) {
+                throw Failure.managerFailed(result)
+            } catch DACHIDTransport.Failure.deviceNotFound {
                 throw Failure.deviceNotFound
             }
 
-            self.manager = manager
-            self.device = match
-            self.runLoop = CFRunLoopGetCurrent()
-            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 64)
-            buffer.initialize(repeating: 0, count: 64)
-            self.buffer = buffer
-
-            let context = Unmanaged.passUnretained(self).toOpaque()
-            IOHIDDeviceRegisterInputReportCallback(
-                device, buffer, 64,
-                { context, _, _, _, _, report, length in
-                    guard let context else { return }
-                    let connection = Unmanaged<Connection>
-                        .fromOpaque(context).takeUnretainedValue()
-                    MainActor.assumeIsolated {
-                        connection.received(report, Int(length))
-                    }
-                }, context)
-            IOHIDDeviceRegisterRemovalCallback(
-                device,
-                { context, _, _ in
-                    guard let context else { return }
-                    let connection = Unmanaged<Connection>
-                        .fromOpaque(context).takeUnretainedValue()
-                    MainActor.assumeIsolated {
-                        connection.deviceWasRemoved()
-                    }
-                }, context)
-            // A SwiftUI Slider tracks the mouse in NSEventTrackingRunLoopMode.
-            // Do not rely on AppKit having added that mode to this run loop's
-            // common set: test hosts and some panel lifecycles do not. Add it,
-            // then schedule the HID source exactly once in common modes.
-            CFRunLoopAddCommonMode(runLoop, Self.eventTrackingRunLoopMode)
-            IOHIDDeviceScheduleWithRunLoop(device, runLoop,
-                                           CFRunLoopMode.commonModes.rawValue)
+            session.onInput = { [weak self] frame in self?.received(frame) }
+            session.onRemoved = { [weak self] in self?.deviceWasRemoved() }
+#if DEBUG
+            session.onReportIssuedForTesting = { [weak self] in
+                self?.onReportIssuedForTesting?()
+            }
+#endif
         }
 
         /// Explicit and idempotent because HID callbacks hold an unretained
@@ -490,32 +295,11 @@ public enum ShanlingUA1II {
             onConfirmed = nil
             onDropped = nil
             onRemoved = nil
-
-            // Keep the device and callback storage alive until an asynchronous
-            // SetReport completion has released its report buffer.
-            if activeSendCount == 0 { tearDownIO() }
+            session.close()
         }
 
         isolated deinit {
             if !closed { close() }
-            if !ioTornDown { tearDownIO() }
-        }
-
-        private func tearDownIO() {
-            guard !ioTornDown else { return }
-            ioTornDown = true
-            IOHIDDeviceUnscheduleFromRunLoop(device, runLoop,
-                                             CFRunLoopMode.commonModes.rawValue)
-            if let buffer {
-                IOHIDDeviceRegisterInputReportCallback(device, buffer, 64, nil, nil)
-            }
-            IOHIDDeviceRegisterRemovalCallback(device, nil, nil)
-            IOHIDManagerClose(manager, 0)
-            if let buffer {
-                buffer.deinitialize(count: 64)
-                buffer.deallocate()
-                self.buffer = nil
-            }
         }
 
         private func deviceWasRemoved() {
@@ -527,11 +311,9 @@ public enum ShanlingUA1II {
 
         // MARK: Input reports
 
-        private func received(_ report: UnsafeMutablePointer<UInt8>, _ length: Int) {
+        private func received(_ frame: [UInt8]) {
             guard !closed else { return }
-            guard length == UA1IIWireCodec.inputReportLength else { return }
-            let frame = Array(UnsafeBufferPointer(
-                start: report, count: UA1IIWireCodec.inputReportLength))
+            guard frame.count == UA1IIWireCodec.inputReportLength else { return }
             let input: UA1IIWireCodec.Input
             do {
                 input = try UA1IIWireCodec.decode(frame)
@@ -739,32 +521,10 @@ public enum ShanlingUA1II {
         }
 
         private func sendReport(_ frame: [UInt8]) async -> IOReturn {
-            activeSendCount += 1
-            let operation = ReportSendOperation(frame: frame)
-            let result = await withCheckedContinuation { continuation in
-                operation.install(continuation)
-                let context = Unmanaged.passRetained(operation).toOpaque()
-                let immediateResult = IOHIDDeviceSetReportWithCallback(
-                    device, kIOHIDReportTypeOutput, ShanlingUA1II.outputReportID,
-                    operation.buffer, operation.count,
-                    Self.sendTimeoutMilliseconds,
-                    { context, result, _, _, _, _, _ in
-                        guard let context else { return }
-                        let operation = Unmanaged<ReportSendOperation>
-                            .fromOpaque(context).takeRetainedValue()
-                        operation.finish(result)
-                    }, context)
-                if immediateResult != kIOReturnSuccess {
-                    Unmanaged<ReportSendOperation>.fromOpaque(context).release()
-                    operation.finish(immediateResult)
-                }
-#if DEBUG
-                onReportIssuedForTesting?()
-#endif
-            }
-            activeSendCount -= 1
-            if closed, activeSendCount == 0 { tearDownIO() }
-            return result
+            await session.send(
+                frame,
+                reportID: ShanlingUA1II.outputReportID,
+                timeoutMilliseconds: Self.sendTimeoutMilliseconds)
         }
 
         // MARK: Reading

@@ -32,7 +32,7 @@ case "$MODE" in
     --telemetry|telemetry)
         open_app
         /usr/bin/log stream --info --style compact \
-            --predicate "subsystem == \"$APP_ID\" OR subsystem == \"ShanlingUA1II\""
+            --predicate "subsystem == \"$APP_ID\" OR subsystem == \"ShanlingUA1II\" OR subsystem == \"IBassoDCTonfa\""
         ;;
     --verify|verify)
         open_app

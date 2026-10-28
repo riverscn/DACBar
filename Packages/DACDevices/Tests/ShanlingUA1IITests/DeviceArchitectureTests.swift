@@ -96,26 +96,6 @@ struct DeviceArchitectureTests {
             == DACDeviceKit.Mutation(setting: .screenOffset, value: 5))
     }
 
-    @Test("Opaque registry IDs never imply chronology during overlap")
-    func opaqueRegistryIdentity() throws {
-        let lowerOpaqueID = device(registryEntryID: 1)
-        let higherOpaqueID = device(registryEntryID: UInt64.max)
-
-        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
-            lowerOpaqueID, higherOpaqueID,
-        ]).isEmpty)
-        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
-            higherOpaqueID, lowerOpaqueID,
-        ]).isEmpty)
-        #expect(ShanlingUA1II.discardingAmbiguousRegistryEntries([
-            lowerOpaqueID,
-        ]) == [lowerOpaqueID])
-        #expect(!ShanlingUA1II.matchesOpeningIdentity(
-            expected: higherOpaqueID, actual: lowerOpaqueID))
-        #expect(ShanlingUA1II.matchesOpeningIdentity(
-            expected: higherOpaqueID, actual: higherOpaqueID))
-    }
-
     @Test("The plug-in replaces caller-crafted metadata with its canonical profile")
     @MainActor
     func canonicalProfileEnforcement() throws {
@@ -165,15 +145,6 @@ struct DeviceArchitectureTests {
         #expect(plugin.profiles.count == 1)
         _ = enumerate
         _ = open
-    }
-
-    private func device(registryEntryID: UInt64) -> DACDeviceKit.Device {
-        DACDeviceKit.Device(
-            profile: ShanlingUA1II.profile,
-            productID: ShanlingUA1II.productID,
-            locationID: 0x0110_0000,
-            registryEntryID: registryEntryID,
-            name: "Shanling UA1 II")
     }
 
     private func profile(

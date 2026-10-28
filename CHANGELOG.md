@@ -5,8 +5,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增 iBasso DC-Tonfa 支持：兼容真机 `2FC6:F121` 与官网登记的 `2FC6:6011`，提供音量、
+  滤波、增益、声道平衡、同轴输出、灭屏旋钮、熄屏时间和屏幕方向控制，并显示固件与 UAC 版本。
+- 新增 DC-Tonfa 8 字节 HID 协议回归、可选真机读取及同值写回测试。
+
 ### Changed
 
+- UA1 II 与 DC-Tonfa 复用统一的 IOHID 设备枚举、精确 service 打开、异步 report 缓冲区
+  生命周期及安全关闭层；各型号的报文、ACK/readback 和发送节奏保持独立。
 - Sparkle 改为验证包含内嵌发布说明的 appcast 以及更新 DMG，并使用系统标准授权界面
   保存自动检查与安装选择。
 - 更新按钮跟随 Sparkle 的实时可检查状态；发布流水线验证签名 feed，并在一次性

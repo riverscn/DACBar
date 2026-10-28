@@ -79,6 +79,7 @@ verify_universal "$APP/Contents/MacOS/DACBar"
     || fail "missing Simplified Chinese app strings"
 for RESOURCE_BUNDLE in \
     DACDevices_DACDeviceKit.bundle \
+    DACDevices_IBassoDCTonfa.bundle \
     DACDevices_ShanlingUA1II.bundle; do
     [ -d "$APP/Contents/Resources/$RESOURCE_BUNDLE" ] \
         || fail "missing resource bundle: $RESOURCE_BUNDLE"
@@ -91,7 +92,7 @@ done
 for RESOURCE_BUNDLE_PATH in "$APP"/Contents/Resources/*.bundle; do
     RESOURCE_BUNDLE=$(basename "$RESOURCE_BUNDLE_PATH")
     case "$RESOURCE_BUNDLE" in
-        DACDevices_DACDeviceKit.bundle|DACDevices_ShanlingUA1II.bundle) ;;
+        DACDevices_DACDeviceKit.bundle|DACDevices_IBassoDCTonfa.bundle|DACDevices_ShanlingUA1II.bundle) ;;
         *) fail "unexpected resource bundle retained: $RESOURCE_BUNDLE" ;;
     esac
 done
