@@ -340,3 +340,42 @@ private extension Color {
         return (red << 16) | (green << 8) | blue
     }
 }
+
+// MARK: - Previews
+
+/// Drives `DeviceControlsView` from a local snapshot, so the controls respond
+/// without a driver at all.
+private struct PreviewControls: View {
+    let fixture: PreviewDevices.Fixture
+    @State private var snapshot: DACDeviceKit.Snapshot
+
+    init(fixture: PreviewDevices.Fixture) {
+        self.fixture = fixture
+        _snapshot = State(initialValue: fixture.snapshot)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(fixture.profile.displayName)
+                .font(.title3)
+                .padding(.horizontal, PanelMetrics.contentInset)
+                .padding(.top, 12)
+            DeviceControlsView(
+                settings: fixture.settings,
+                value: { snapshot[$0] },
+                textValue: { snapshot.textValues[$0] },
+                onChange: { snapshot[$0] = $1 })
+        }
+        .frame(width: PanelMetrics.panelWidth, alignment: .top)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+#Preview("Controls · side by side") {
+    HStack(alignment: .top, spacing: 0) {
+        PreviewControls(fixture: PreviewDevices.shanlingUA1II)
+        Divider()
+        PreviewControls(fixture: PreviewDevices.secondModel)
+    }
+    .fixedSize()
+}
