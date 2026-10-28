@@ -135,7 +135,7 @@ extension IBassoDCTonfa {
                     id: .gain,
                     title: TonfaL10n.text("settings.gain", defaultValue: "Gain"),
                     systemImage: "dial.high", group: .audio,
-                    presentation: .segmented([
+                    presentation: .options([
                         SettingOption(
                             value: 0,
                             label: TonfaL10n.text(
@@ -153,7 +153,7 @@ extension IBassoDCTonfa {
                     id: .filter,
                     title: TonfaL10n.text("settings.filter", defaultValue: "Filter"),
                     systemImage: "waveform", group: .audio,
-                    presentation: .menu(filters)),
+                    presentation: .options(filters)),
                 SettingDescriptor(
                     id: .coaxialOutput,
                     title: TonfaL10n.text(
@@ -184,7 +184,7 @@ extension IBassoDCTonfa {
                     title: TonfaL10n.text(
                         "settings.screen-timeout", defaultValue: "Screen timeout"),
                     systemImage: "clock", group: .display,
-                    presentation: .menu([
+                    presentation: .options([
                         SettingOption(
                             value: 0,
                             label: TonfaL10n.text(
@@ -207,7 +207,7 @@ extension IBassoDCTonfa {
                     title: TonfaL10n.text(
                         "settings.orientation", defaultValue: "Orientation"),
                     systemImage: "arrow.clockwise", group: .display,
-                    presentation: .segmented([
+                    presentation: .options([
                         SettingOption(value: 0, label: "0°"),
                         SettingOption(value: 1, label: "180°"),
                     ])),

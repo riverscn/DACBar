@@ -82,7 +82,7 @@ struct IBassoDCTonfaTests {
         let gain = try #require(IBassoDCTonfa.TonfaDriver.settings.first {
             $0.id == .gain
         })
-        #expect(gain.presentation == .segmented([
+        #expect(gain.presentation == .options([
             DACDeviceKit.SettingOption(value: 0, label: "Low"),
             DACDeviceKit.SettingOption(value: 1, label: "Medium"),
             DACDeviceKit.SettingOption(value: 2, label: "High"),
