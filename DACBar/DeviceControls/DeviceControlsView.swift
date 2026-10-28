@@ -167,9 +167,7 @@ private struct SettingSliderRow: View {
     var body: some View {
         VStack(spacing: 3) {
             HStack(spacing: 6) {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
+                SettingRowLabel(setting: setting)
                 Spacer()
                 Text(formattedValue)
                     .font(.callout.monospacedDigit())
@@ -186,7 +184,7 @@ private struct SettingSliderRow: View {
             .labelsHidden()
             .accessibilityValue(formattedValue)
         }
-        .padding(.vertical, 4)
+        .settingRow()
     }
 }
 
@@ -202,20 +200,18 @@ private struct SettingOptionsRow: View {
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 4) {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
+                SettingRowLabel(setting: setting)
                 if let explainer {
                     explainer
                 }
             }
             .layoutPriority(1)
 
-            Spacer(minLength: 8)
+            Spacer(minLength: SettingRowMetrics.labelGutter)
 
             picker
         }
-        .padding(.vertical, 4)
+        .settingRow()
     }
 
     @ViewBuilder
@@ -270,13 +266,11 @@ private struct SettingToggleRow: View {
         Toggle(
             isOn: Binding(get: { value }, set: { onChange($0) }),
             label: {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
+                SettingRowLabel(setting: setting)
             })
         .toggleStyle(.switch)
         .controlSize(.small)
-        .padding(.vertical, 4)
+        .settingRow()
     }
 }
 
@@ -288,11 +282,9 @@ private struct SettingReadOnlyRow: View {
         LabeledContent {
             Text(value).foregroundStyle(.secondary)
         } label: {
-            Label(setting.title, systemImage: setting.systemImage)
-                .font(.callout)
-                .labelStyle(.titleAndIcon)
+            SettingRowLabel(setting: setting)
         }
-        .padding(.vertical, 4)
+        .settingRow()
     }
 }
 
@@ -308,11 +300,9 @@ private struct SettingColorRow: View {
                 set: { onChange($0.packedRGB) }),
             supportsOpacity: false,
             label: {
-                Label(setting.title, systemImage: setting.systemImage)
-                    .font(.callout)
-                    .labelStyle(.titleAndIcon)
+                SettingRowLabel(setting: setting)
             })
-        .padding(.vertical, 4)
+        .settingRow()
     }
 }
 

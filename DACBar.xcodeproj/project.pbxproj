@@ -12,6 +12,7 @@
 		200000000000000000000002 /* AttachedDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000002 /* AttachedDevice.swift */; };
 		200000000000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000003 /* ContentView.swift */; };
 		200000000000000000000004 /* DeviceControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000004 /* DeviceControlsView.swift */; };
+		200000000000000000000022 /* SettingRowStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000016 /* SettingRowStyle.swift */; };
 		200000000000000000000005 /* DeviceGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000005 /* DeviceGlyph.swift */; };
 		200000000000000000000006 /* DeviceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000006 /* DeviceModel.swift */; };
 		200000000000000000000007 /* DeviceWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 110000000000000000000007 /* DeviceWatcher.swift */; };
@@ -59,6 +60,7 @@
 		110000000000000000000002 /* AttachedDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachedDevice.swift; sourceTree = "<group>"; };
 		110000000000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		110000000000000000000004 /* DeviceControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceControlsView.swift; sourceTree = "<group>"; };
+		110000000000000000000016 /* SettingRowStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingRowStyle.swift; sourceTree = "<group>"; };
 		110000000000000000000005 /* DeviceGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceGlyph.swift; sourceTree = "<group>"; };
 		110000000000000000000006 /* DeviceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceModel.swift; sourceTree = "<group>"; };
 		110000000000000000000007 /* DeviceWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceWatcher.swift; sourceTree = "<group>"; };
@@ -167,6 +169,7 @@
 				110000000000000000000004 /* DeviceControlsView.swift */,
 				110000000000000000000005 /* DeviceGlyph.swift */,
 				11000000000000000000000A /* SettingExplainer.swift */,
+				110000000000000000000016 /* SettingRowStyle.swift */,
 			);
 			path = DeviceControls;
 			sourceTree = "<group>";
@@ -399,6 +402,7 @@
 				200000000000000000000008 /* Localization.swift in Sources */,
 				200000000000000000000009 /* PanelStyle.swift in Sources */,
 				20000000000000000000000A /* SettingExplainer.swift in Sources */,
+				200000000000000000000022 /* SettingRowStyle.swift in Sources */,
 				20000000000000000000001E /* SettingsView.swift in Sources */,
 				20000000000000000000000B /* SnapshotConvenience.swift in Sources */,
 				20000000000000000000000C /* SupportedDevices.swift in Sources */,
